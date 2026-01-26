@@ -6,17 +6,94 @@ https://gianandr4.github.io/SMAX-Upgrade-Tool/
 
 Each version folder (e.g., `24.4/`) contains:
 
-### New Unified Client Files (Recommended)
-- `client-A.yaml` - Client A's complete configuration (stages, steps, state, config, notes)
-- `client-B.yaml` - Client B's complete configuration
-- `client-C.yaml` - Client C's complete configuration
+### Supported File Formats
+
+**Markdown Format (Recommended):**
+- `client-D.md` - Markdown with YAML front-matter
+- `client-E.md` - Better for documentation-heavy workflows
+- Natural syntax for steps, notes, and commands
+
+**YAML Format:**
+- `client-A.yaml` - Traditional YAML structure
+- `client-B.yaml` - Good for programmatic generation
+- `client-C.yaml` - Compact structured format
 
 ### Legacy Files (Backward Compatible)
 The tool automatically migrates old format files to the new unified structure:
 - `client-X-managed-steps.yaml` / `client-X-embedded-steps.yaml` - Old step definitions
 - `state-client-X.yaml` - Old state files (automatically merged on first load)
 
-## New YAML Structure
+## File Format Options
+
+### Option 1: Markdown with Front-Matter (Recommended)
+
+Markdown provides a more natural, readable format especially when dealing with rich documentation and notes.
+
+**Structure:**
+```markdown
+---
+config:
+  namespace: "itsma-clienta"
+  version: "24.4"
+  registry_server: "registry.example.com"
+  username: "admin"
+---
+
+# Preparation
+
+## SMAX Health Check
+
+Ensure all pods are running before starting.
+
+```bash
+kubectl get pods -n {{namespace}}
+```
+
+- [ ] Step not completed
+
+**Personal Notes:**
+Verified all pods healthy on 2024-01-15
+
+---
+
+## Create Docker Registry Secret
+
+```bash
+kubectl create secret docker-registry <image_secret_name> \
+  --docker-username=<username> \
+  --docker-****** \
+  --docker-server=<registry_server> \
+  -n <namespace>
+```
+
+- [x] Step completed
+
+---
+
+# Upgrade
+
+## Apply Upgrade
+
+```bash
+./upgrade.sh -n {{namespace}} -v {{version}}
+```
+
+- [ ] Step not completed
+
+---
+```
+
+**Benefits:**
+- ✅ More readable and natural for documentation
+- ✅ No YAML escaping issues for markdown content
+- ✅ Better Git diffs and easier editing
+- ✅ Familiar format (used in Jekyll, Hugo, etc.)
+- ✅ Stages defined by H1 headers (`#`)
+- ✅ Steps defined by H2 headers (`##`)
+- ✅ Checkboxes indicate completion: `- [x]` or `- [ ]`
+- ✅ Personal notes marked with `**Personal Notes:**`
+
+### Option 2: YAML Structure
 
 ```yaml
 config:
@@ -71,7 +148,8 @@ stages:
 - ✅ **Wizard View**: Navigate through one stage at a time with Previous/Next buttons
 - ✅ **Progress Tracking**: Visual progress bar showing completion across all stages
 - ✅ **Stage Tabs**: Quick navigation between stages with completion indicators
-- ✅ **Unified YAML**: Single file per client containing configuration, state, and notes
+- ✅ **Dual Format Support**: Choose between Markdown (.md) or YAML (.yaml) files
+- ✅ **Unified Configuration**: Single file per client containing configuration, state, and notes
 
 ### Step Management
 - ✅ **Checkbox Tracking**: Mark steps as done/undone with visual feedback
@@ -83,12 +161,19 @@ stages:
 - ✅ **Per-Step Notes**: Add personal notes to each step in markdown format
 - ✅ **Live Preview**: Real-time markdown rendering as you type
 - ✅ **Rich Formatting**: Support for headings, lists, code blocks, bold, italic, etc.
-- ✅ **Persistent Storage**: Notes saved to YAML file
+- ✅ **Persistent Storage**: Notes saved back to file (YAML or Markdown)
+- ✅ **Native Markdown Files**: Use .md files for better readability and editing experience
+
+### File Format Support
+- ✅ **Auto-Detection**: Automatically detects and loads .md or .yaml files
+- ✅ **Markdown Front-Matter**: YAML configuration in front-matter, content in markdown
+- ✅ **Bi-Directional Conversion**: Save changes back in original format
+- ✅ **Format Choice**: Pick the format that works best for your workflow
 
 ### Backward Compatibility
 - ✅ **Auto-Migration**: Automatically converts old format files to new unified structure
-- ✅ **State Merging**: Merges old separate state files into unified YAML
-- ✅ **Dynamic Client Loading**: Scans version folder for client YAML files
+- ✅ **State Merging**: Merges old separate state files into unified format
+- ✅ **Dynamic Client Loading**: Scans version folder for client files (.yaml or .md)
 
 ### Technical Features
 - ✅ **GitHub API Integration**: Direct read/write to repository
