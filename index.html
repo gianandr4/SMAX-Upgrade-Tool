@@ -35,7 +35,7 @@
         
         /* Header & Controls */
         .header { background: var(--dark); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .controls { display: flex; gap: 12px; flex-wrap: wrap; background: #fff; padding: 15px 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; align-items: center; }
+        .controls { display: flex; gap: 12px; flex-wrap: wrap; background: #fff; padding: 15px 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; align-items: center; position: relative; }
         
         /* Layout */
         .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
@@ -79,7 +79,11 @@
         .note-toggle { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 12px; text-decoration: underline; }
         .note-editor { display: none; }
         .note-editor.active { display: block; }
-        .note-preview { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; min-height: 40px; color: #24292e; }
+        .note-content.editing .note-preview { display: none; }
+        .note-content.editing .note-textarea { display: block; }
+        .note-content:not(.editing) .note-preview { display: block; }
+        .note-content:not(.editing) .note-textarea { display: none; }
+        .note-preview { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; min-height: 40px; color: var(--text); }
         .note-preview h1, .note-preview h2, .note-preview h3 { margin-top: 0; }
         .note-preview code { background: #1b1f23; color: #e1e4e8; padding: 2px 6px; border-radius: 3px; font-family: ui-monospace, monospace; }
         .note-preview pre { background: #1b1f23; color: #e1e4e8; padding: 12px; border-radius: 6px; overflow-x: auto; }
@@ -118,12 +122,27 @@
         .theme-toggle:hover { background: var(--bg); }
         
         /* Raw editor */
-        .raw-editor { width: 100%; height: 500px; font-family: ui-monospace, monospace; font-size: 13px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); }
+        .raw-editor { width: 100%; height: 600px; font-family: ui-monospace, monospace; font-size: 13px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); }
         
         /* Image upload */
         .image-upload-area { border: 2px dashed var(--border); border-radius: 6px; padding: 20px; text-align: center; margin: 10px 0; cursor: pointer; }
         .image-upload-area:hover { background: var(--bg); }
         .image-upload-area.dragging { border-color: var(--primary); background: var(--bg); }
+        
+        /* Environment Variables Sidebar */
+        .env-vars-sidebar { position: fixed; top: 300px; right: -310px; width: 300px; max-height: 70vh; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: right 0.3s ease; }
+        .env-vars-sidebar.open { right: 20px; }
+        
+        /* Client Menu Modal */
+        .client-menu-modal { position: fixed; top: 300px; left: 50px; width: 300px; max-height: 70vh; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        
+        /* Edit Step Modal */
+        .edit-step-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; max-height: 80vh; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .menu-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .menu-item:hover { background: var(--border); }
+        .menu-item.selected { background: var(--primary); color: white; }
+        .submenu { margin-left: 20px; }
+        .submenu .menu-item { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -152,12 +171,16 @@
     </select>
 
     <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
-        <input type="checkbox" id="autosaveToggle" onchange="toggleAutosave()" />
+        <input type="checkbox" id="autosaveToggle" onchange="toggleAutosave()" checked />
         Autosave
     </label>
 
     <button onclick="saveData()" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
         💾 Save Progress
+    </button>
+    
+    <button onclick="loadData()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+        🔄 Refresh Data
     </button>
     
     <button onclick="showRawEditor()" style="background: #6f42c1; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
@@ -167,6 +190,22 @@
     <button onclick="showVersionUpgrade()" style="background: #0366d6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
         🚀 Upgrade to Version
     </button>
+    
+    <button onclick="toggleEnvVars()" id="envToggleBtn" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+        ⚙️ Variables
+    </button>
+    
+    <button onclick="toggleClientMenu()" id="menuToggleBtn" style="background: #17a2b8; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+        📁 Menu
+    </button>
+    
+    <div class="card client-menu-modal" id="client-menu-card" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h4 style="margin: 0;">Clients & Versions</h4>
+            <button onclick="closeClientMenu()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text);">✕</button>
+        </div>
+        <div id="client-menu-content"></div>
+    </div>
     
     <button onclick="showResetModal()" class="reset-btn">
         🔄 Reset All Done Steps
@@ -193,8 +232,11 @@
         </div>
     </div>
 
-    <div class="card" id="env-vars-card">
-        <h4 style="margin-top:0">Environment Variables</h4>
+    <div class="card env-vars-sidebar" id="env-vars-card" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h4 style="margin: 0;">Environment Variables</h4>
+            <button onclick="closeEnvVars()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text);">✕</button>
+        </div>
         <div id="var-inputs" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;"></div>
     </div>
     
@@ -255,9 +297,13 @@
     <div class="modal-content">
         <h3 style="margin-top: 0;">Upgrade to New Version</h3>
         <p>Select target version to clone this configuration:</p>
-        <select id="targetVersionSelect" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text);">
+        <select id="targetVersionSelect" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text);" onchange="onTargetVersionChange()">
             <option value="">Select version...</option>
         </select>
+        <div id="newVersionDiv" style="display: none; margin: 10px 0;">
+            <label for="newVersionInput" style="display: block; margin-bottom: 5px; font-weight: 500;">New Version Number:</label>
+            <input type="text" id="newVersionInput" placeholder="e.g., 24.6" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text);">
+        </div>
         <div class="modal-buttons">
             <button onclick="closeVersionUpgrade()" style="padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--card-bg); color: var(--text);">
                 Cancel
@@ -269,29 +315,65 @@
     </div>
 </div>
 
+<!-- Edit Step Modal -->
+<div id="editStepModal" class="modal edit-step-modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0;">Edit Step</h3>
+        <textarea id="editStepContent" class="raw-editor"></textarea>
+        <div class="modal-buttons">
+            <button onclick="closeEditStep()" style="padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--card-bg); color: var(--text);">
+                Cancel
+            </button>
+            <button onclick="saveEditStep()" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                Apply Changes
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
-let GITHUB_TOKEN = "";
+let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
     let FILE_SHA = "";
     let CURRENT_YAML_PATH = "";
     let config = { title: "", config: {}, stages: [] };
     let currentStageIndex = 0;
-    let autosaveEnabled = false;
+    let autosaveEnabled = true;
     let autosaveTimeout = null;
+    let editingStageIndex, editingStepIndex;
+    let menuData = {}; // Store versions and their clients
 
     // Hardcoded repository information for personal use
     const OWNER = "gianandr4";
     const REPO = "SMAX-Upgrade-Tool"; 
+    const VERSIONS_BASE_PATH = "SMAX"; 
 
-    async function connect() {
+    // Initialize token input field if cached and auto-connect
+    if (GITHUB_TOKEN) {
+        document.getElementById('ghToken').value = GITHUB_TOKEN;
+        // Auto-connect with cached token after DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            connect(true); // true indicates auto-connection
+        });
+    }
+
+    async function connect(autoConnect = false) {
         GITHUB_TOKEN = document.getElementById('ghToken').value;
         if (!GITHUB_TOKEN) {
-            showError('Please enter a GitHub token');
+            if (!autoConnect) {
+                showError('Please enter a GitHub token');
+            }
             return;
         }
-        console.log('[SMAX Tool] Connecting with GitHub token...');
+        // Cache token in session storage
+        sessionStorage.setItem('github_token', GITHUB_TOKEN);
+        if (!autoConnect) {
+            console.log('[SMAX Tool] Connecting with GitHub token...');
+        } else {
+            console.log('[SMAX Tool] Auto-connecting with cached GitHub token...');
+        }
         // Step 1: Dynamically find folders
         await fetchFolders();
-        // Step 2: Load data for the first folder found
+        // Step 2: Load data for selected folder (will use cached selections or defaults)
         loadData();
     }
 
@@ -299,8 +381,8 @@ let GITHUB_TOKEN = "";
     async function fetchFolders() {
         if (!GITHUB_TOKEN) return;
         try {
-            console.log(`[SMAX Tool] Fetching folders from ${OWNER}/${REPO}...`);
-            const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/`, {
+            console.log(`[SMAX Tool] Fetching folders from ${OWNER}/${REPO}/${VERSIONS_BASE_PATH}...`);
+            const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${VERSIONS_BASE_PATH}`, {
                 headers: { Authorization: `token ${GITHUB_TOKEN}` }
             });
             
@@ -328,13 +410,22 @@ let GITHUB_TOKEN = "";
                 opt.value = folder.name;
                 opt.innerText = `Version ${folder.name}`;
                 folderSelect.appendChild(opt);
+                
+                // Store in menu data
+                menuData[folder.name] = [];
             });
             
             console.log(`[SMAX Tool] Found ${folders.length} version folder(s)`);
             
-            // Load clients for the first version
-            if (folders.length > 0) {
-                await fetchClients(folders[0].name);
+            renderClientMenu();
+            
+            // Load clients for cached version or first version
+            const cachedVersion = sessionStorage.getItem('selected_version');
+            const targetVersion = cachedVersion && folders.some(f => f.name === cachedVersion) ? cachedVersion : folders[0].name;
+            
+            if (targetVersion) {
+                document.getElementById('selVer').value = targetVersion;
+                await fetchClients(targetVersion);
             }
         } catch (e) {
             console.error('[SMAX Tool] fetchFolders error:', e);
@@ -346,8 +437,8 @@ let GITHUB_TOKEN = "";
     async function fetchClients(version) {
         if (!GITHUB_TOKEN) return;
         try {
-            console.log(`[SMAX Tool] Fetching clients from ${version}/...`);
-            const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${version}`, {
+            console.log(`[SMAX Tool] Fetching clients from ${VERSIONS_BASE_PATH}/${version}/...`);
+            const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${VERSIONS_BASE_PATH}/${version}`, {
                 headers: { Authorization: `token ${GITHUB_TOKEN}` }
             });
             
@@ -390,6 +481,21 @@ let GITHUB_TOKEN = "";
                 clientSelect.appendChild(opt);
             });
             
+            // Store in menu data
+            menuData[version] = Array.from(clients);
+            renderClientMenu();
+            
+            // Restore cached client selection or select first available
+            const cachedClient = sessionStorage.getItem('selected_client');
+            if (cachedClient && clients.has(cachedClient)) {
+                document.getElementById('selClient').value = cachedClient;
+            } else if (clients.size > 0) {
+                // Select first available client as default
+                const firstClient = Array.from(clients)[0];
+                document.getElementById('selClient').value = firstClient;
+                sessionStorage.setItem('selected_client', firstClient);
+            }
+            
             console.log(`[SMAX Tool] Found ${clients.size} client(s)`);
         } catch (e) {
             console.error('[SMAX Tool] fetchClients error:', e);
@@ -428,6 +534,7 @@ let GITHUB_TOKEN = "";
         let collectingNotes = false;
         let commandBuffer = [];
         let notesBuffer = [];
+        let rawBuffer = [];
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
@@ -441,6 +548,7 @@ let GITHUB_TOKEN = "";
             // H2 = New Stage
             if (line.startsWith('## ') && !line.startsWith('### ')) {
                 if (currentStep && currentStage) {
+                    currentStep.rawMd = rawBuffer.join('\n');
                     currentStage.steps.push(currentStep);
                 }
                 if (currentStage) {
@@ -454,12 +562,14 @@ let GITHUB_TOKEN = "";
                 currentStep = null;
                 collectingCommand = false;
                 collectingNotes = false;
+                rawBuffer = [];
                 continue;
             }
             
             // H3 = New Step
             if (line.startsWith('### ')) {
                 if (currentStep && currentStage) {
+                    currentStep.rawMd = rawBuffer.join('\n');
                     currentStage.steps.push(currentStep);
                 }
                 
@@ -476,7 +586,13 @@ let GITHUB_TOKEN = "";
                 collectingNotes = false;
                 commandBuffer = [];
                 notesBuffer = [];
+                rawBuffer = [line]; // Start collecting raw for this step
                 continue;
+            }
+            
+            // Collect raw line for current step
+            if (currentStep) {
+                rawBuffer.push(line);
             }
             
             // Code block start/end
@@ -552,6 +668,7 @@ let GITHUB_TOKEN = "";
             if (collectingNotes && notesBuffer.length > 0) {
                 currentStep.userNotes = notesBuffer.join('\n').trim();
             }
+            currentStep.rawMd = rawBuffer.join('\n');
             currentStage.steps.push(currentStep);
         }
         if (currentStage) {
@@ -629,6 +746,9 @@ let GITHUB_TOKEN = "";
         const ver = document.getElementById('selVer').value;
         if (!ver) return;
         
+        // Cache selected version
+        sessionStorage.setItem('selected_version', ver);
+        
         await fetchClients(ver);
         // Don't auto-load data, wait for user to select a client
     }
@@ -643,8 +763,11 @@ let GITHUB_TOKEN = "";
             return;
         }
 
+        // Cache selected client
+        sessionStorage.setItem('selected_client', client);
+
         // Only support markdown format now
-        const mdPath = `${ver}/${client}.md`;
+        const mdPath = `${VERSIONS_BASE_PATH}/${ver}/${client}.md`;
         
         // Try markdown first
         if (await tryLoadMarkdown(ver, client, mdPath)) {
@@ -653,7 +776,7 @@ let GITHUB_TOKEN = "";
         }
         
         // If no markdown, check for YAML and migrate
-        const yamlPath = `${ver}/${client}.yaml`;
+        const yamlPath = `${VERSIONS_BASE_PATH}/${ver}/${client}.yaml`;
         console.log(`[SMAX Tool] No markdown found, checking for YAML to migrate...`);
         
         try {
@@ -731,8 +854,8 @@ let GITHUB_TOKEN = "";
             console.log('[SMAX Tool] Migrating from old format...');
             
             // Try to load old managed or embedded steps file
-            let oldStepsPath = `${ver}/${client}-managed-steps.yaml`;
-            let oldStatePath = `${ver}/state-${client}.yaml`;
+            let oldStepsPath = `${VERSIONS_BASE_PATH}/${ver}/${client}-managed-steps.yaml`;
+            let oldStatePath = `${VERSIONS_BASE_PATH}/${ver}/state-${client}.yaml`;
             
             let stepsResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${oldStepsPath}`, {
                 headers: { Authorization: `token ${GITHUB_TOKEN}` }
@@ -740,7 +863,7 @@ let GITHUB_TOKEN = "";
             
             if (stepsResp.status === 404) {
                 // Try embedded format
-                oldStepsPath = `${ver}/${client}-embedded-steps.yaml`;
+                oldStepsPath = `${VERSIONS_BASE_PATH}/${ver}/${client}-embedded-steps.yaml`;
                 stepsResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${oldStepsPath}`, {
                     headers: { Authorization: `token ${GITHUB_TOKEN}` }
                 });
@@ -788,7 +911,7 @@ let GITHUB_TOKEN = "";
             });
             
             // Save as markdown
-            CURRENT_YAML_PATH = `${ver}/${client}.md`;
+            CURRENT_YAML_PATH = `${VERSIONS_BASE_PATH}/${ver}/${client}.md`;
             FILE_SHA = ""; // Will create new file
             await saveData();
             
@@ -1072,8 +1195,6 @@ let GITHUB_TOKEN = "";
             title.style.fontSize = '16px';
             title.style.cursor = 'pointer';
             title.textContent = step.title || 'Untitled Step';
-            title.onclick = () => editStepTitle(currentStageIndex, stepIndex);
-            title.title = 'Click to edit title';
             
             leftSection.appendChild(checkbox);
             leftSection.appendChild(title);
@@ -1083,6 +1204,13 @@ let GITHUB_TOKEN = "";
             rightSection.style.display = 'flex';
             rightSection.style.gap = '6px';
             
+            // Edit button
+            const editBtn = document.createElement('button');
+            editBtn.className = 'note-toggle-btn';
+            editBtn.innerHTML = '📝 Edit';
+            editBtn.title = 'Edit step';
+            editBtn.onclick = () => editStep(currentStageIndex, stepIndex);
+            
             // Minimal notes button
             const notesBtn = document.createElement('button');
             notesBtn.className = `note-toggle-btn ${step.userNotes ? 'has-notes' : ''}`;
@@ -1090,6 +1218,7 @@ let GITHUB_TOKEN = "";
             notesBtn.title = step.userNotes ? 'View/Edit notes' : 'Add notes';
             notesBtn.onclick = () => toggleNoteEditor(currentStageIndex, stepIndex);
             
+            rightSection.appendChild(editBtn);
             rightSection.appendChild(notesBtn);
             
             header.appendChild(leftSection);
@@ -1100,13 +1229,11 @@ let GITHUB_TOKEN = "";
             if (step.notes) {
                 const notesDiv = document.createElement('div');
                 notesDiv.className = 'editable';
-                notesDiv.style.color = '#586069';
+                notesDiv.style.color = 'white';
                 notesDiv.style.margin = '8px 0';
                 notesDiv.style.fontStyle = 'italic';
                 notesDiv.style.cursor = 'pointer';
                 notesDiv.textContent = step.notes;
-                notesDiv.onclick = () => editStepNotes(currentStageIndex, stepIndex);
-                notesDiv.title = 'Click to edit description';
                 card.appendChild(notesDiv);
             }
             
@@ -1119,9 +1246,6 @@ let GITHUB_TOKEN = "";
                 
                 const pre = document.createElement('pre');
                 pre.style.position = 'relative';
-                pre.style.cursor = 'pointer';
-                pre.onclick = () => editStepCommand(currentStageIndex, stepIndex);
-                pre.title = 'Click to edit command';
                 
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'copy-btn';
@@ -1139,7 +1263,7 @@ let GITHUB_TOKEN = "";
                 card.appendChild(commandContainer);
             }
             
-            // Collapsible note editor section
+            // Collapsible note section - shows preview by default
             const noteEditor = document.createElement('div');
             noteEditor.className = 'note-editor';
             noteEditor.id = `note-editor_${currentStageIndex}_${stepIndex}`;
@@ -1147,17 +1271,11 @@ let GITHUB_TOKEN = "";
             noteEditor.style.borderTop = '1px solid var(--border)';
             noteEditor.style.paddingTop = '15px';
             
-            const noteTextarea = document.createElement('textarea');
-            noteTextarea.id = `note-textarea_${currentStageIndex}_${stepIndex}`;
-            noteTextarea.value = step.userNotes || '';
-            noteTextarea.placeholder = 'Enter notes in Markdown format...\n\nYou can:\n- Paste images directly (Ctrl+V)\n- Drag and drop images\n- Use **bold**, *italic*, lists, etc.';
-            noteTextarea.rows = 6;
-            noteTextarea.style.marginBottom = '10px';
+            // Container for content (preview or textarea)
+            const noteContent = document.createElement('div');
+            noteContent.id = `note-content_${currentStageIndex}_${stepIndex}`;
             
-            // Setup image paste/drop
-            setupImagePaste(noteTextarea);
-            
-            // Live preview
+            // Live preview (shown by default)
             const notePreview = document.createElement('div');
             notePreview.className = 'note-preview';
             notePreview.id = `note-preview_${currentStageIndex}_${stepIndex}`;
@@ -1165,20 +1283,51 @@ let GITHUB_TOKEN = "";
             if (step.userNotes) {
                 notePreview.innerHTML = marked.parse(step.userNotes);
             } else {
-                notePreview.innerHTML = '<span style="color: #586069; font-style: italic;">Preview will appear here...</span>';
+                notePreview.innerHTML = '<span style="color: #586069; font-style: italic;">No notes yet. Click Edit to add some.</span>';
             }
             
+            // Textarea (hidden by default)
+            const noteTextarea = document.createElement('textarea');
+            noteTextarea.id = `note-textarea_${currentStageIndex}_${stepIndex}`;
+            noteTextarea.disabled = false;
+            noteTextarea.readOnly = false;
+            noteTextarea.value = step.userNotes || '';
+            noteTextarea.placeholder = 'Enter notes in Markdown format...\n\nYou can:\n- Paste images directly (Ctrl+V)\n- Drag and drop images\n- Use **bold**, *italic*, lists, etc.';
+            noteTextarea.rows = 6;
+            noteTextarea.style.marginBottom = '10px';
+            noteTextarea.style.display = 'none';
+            
+            // Setup image paste/drop
+            setupImagePaste(noteTextarea);
+            
+            // Update preview on input
             noteTextarea.oninput = () => {
-                if (noteTextarea.value) {
-                    notePreview.innerHTML = marked.parse(noteTextarea.value);
-                } else {
-                    notePreview.innerHTML = '<span style="color: #586069; font-style: italic;">Preview will appear here...</span>';
+                const preview = document.getElementById(`note-preview_${currentStageIndex}_${stepIndex}`);
+                if (preview) {
+                    if (noteTextarea.value) {
+                        preview.innerHTML = marked.parse(noteTextarea.value);
+                    } else {
+                        preview.innerHTML = '<span style="color: #586069; font-style: italic;">No notes yet. Click Edit to add some.</span>';
+                    }
                 }
             };
+            
+            noteContent.appendChild(notePreview);
+            noteContent.appendChild(noteTextarea);
             
             const noteButtons = document.createElement('div');
             noteButtons.style.display = 'flex';
             noteButtons.style.gap = '10px';
+            
+            const editNoteBtn = document.createElement('button');
+            editNoteBtn.textContent = '✏️ Edit';
+            editNoteBtn.style.padding = '8px 16px';
+            editNoteBtn.style.border = '1px solid var(--border)';
+            editNoteBtn.style.borderRadius = '6px';
+            editNoteBtn.style.cursor = 'pointer';
+            editNoteBtn.style.background = 'var(--card-bg)';
+            editNoteBtn.style.color = 'var(--text)';
+            editNoteBtn.onclick = () => toggleNoteEdit(currentStageIndex, stepIndex);
             
             const saveNoteBtn = document.createElement('button');
             saveNoteBtn.textContent = '💾 Save Note';
@@ -1200,12 +1349,11 @@ let GITHUB_TOKEN = "";
             cancelNoteBtn.style.color = 'var(--text)';
             cancelNoteBtn.onclick = () => toggleNoteEditor(currentStageIndex, stepIndex);
             
+            noteButtons.appendChild(editNoteBtn);
             noteButtons.appendChild(saveNoteBtn);
             noteButtons.appendChild(cancelNoteBtn);
             
-            noteEditor.appendChild(noteTextarea);
-            noteEditor.appendChild(document.createTextNode('Preview:'));
-            noteEditor.appendChild(notePreview);
+            noteEditor.appendChild(noteContent);
             noteEditor.appendChild(noteButtons);
             
             card.appendChild(noteEditor);
@@ -1221,10 +1369,65 @@ let GITHUB_TOKEN = "";
         }
     }
     
+    function toggleNoteEdit(stageIndex, stepIndex) {
+        const content = document.getElementById(`note-content_${stageIndex}_${stepIndex}`);
+        const preview = document.getElementById(`note-preview_${stageIndex}_${stepIndex}`);
+        const textarea = document.getElementById(`note-textarea_${stageIndex}_${stepIndex}`);
+        
+        if (content && preview && textarea) {
+            const isEditing = content.classList.contains('editing');
+            
+            if (isEditing) {
+                // Switch to preview mode
+                content.classList.remove('editing');
+                preview.style.display = 'block';
+                textarea.style.display = 'none';
+            } else {
+                // Switch to edit mode
+                content.classList.add('editing');
+                preview.style.display = 'none';
+                textarea.style.display = 'block';
+                
+                // Ensure textarea is interactive
+                textarea.disabled = false;
+                textarea.readOnly = false;
+                textarea.style.pointerEvents = 'auto';
+                
+                // Focus with a small delay
+                setTimeout(() => {
+                    textarea.focus();
+                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 50);
+            }
+        }
+    }
+    
     // NEW: Save note
     function saveNote(stageIndex, stepIndex) {
         const textarea = document.getElementById(`note-textarea_${stageIndex}_${stepIndex}`);
+        const preview = document.getElementById(`note-preview_${stageIndex}_${stepIndex}`);
+        
         config.stages[stageIndex].steps[stepIndex].userNotes = textarea.value;
+        
+        // Update preview and switch back to preview mode
+        if (preview) {
+            if (textarea.value) {
+                preview.innerHTML = marked.parse(textarea.value);
+            } else {
+                preview.innerHTML = '<span style="color: #586069; font-style: italic;">No notes yet. Click Edit to add some.</span>';
+            }
+            preview.style.display = 'block';
+        }
+        
+        // Switch back to preview mode
+        const content = document.getElementById(`note-content_${stageIndex}_${stepIndex}`);
+        if (content) {
+            content.classList.remove('editing');
+        }
+        
+        if (textarea) {
+            textarea.style.display = 'none';
+        }
         
         // Close editor and re-render to update button
         toggleNoteEditor(stageIndex, stepIndex);
@@ -1251,6 +1454,110 @@ let GITHUB_TOKEN = "";
         updateProgress();
         renderStageTabs();
         triggerAutosave();
+    }
+    
+    // Toggle environment variables sidebar
+    function toggleEnvVars() {
+        const card = document.getElementById('env-vars-card');
+        const btn = document.getElementById('envToggleBtn');
+        card.classList.toggle('open');
+        if (card.classList.contains('open')) {
+            card.style.display = 'block';
+            btn.textContent = '⚙️ Hide Variables';
+        } else {
+            setTimeout(() => card.style.display = 'none', 300); // Hide after animation
+            btn.textContent = '⚙️ Variables';
+        }
+    }
+    
+    function closeEnvVars() {
+        const card = document.getElementById('env-vars-card');
+        const btn = document.getElementById('envToggleBtn');
+        card.classList.remove('open');
+        setTimeout(() => card.style.display = 'none', 300);
+        btn.textContent = '⚙️ Variables';
+    }
+    
+    // Toggle client menu sidebar
+    function toggleClientMenu() {
+        const card = document.getElementById('client-menu-card');
+        const btn = document.getElementById('menuToggleBtn');
+        if (card.style.display === 'none' || card.style.display === '') {
+            card.style.display = 'block';
+            btn.textContent = '📁 Hide Menu';
+        } else {
+            card.style.display = 'none';
+            btn.textContent = '📁 Menu';
+        }
+    }
+    
+    function closeClientMenu() {
+        const card = document.getElementById('client-menu-card');
+        const btn = document.getElementById('menuToggleBtn');
+        card.classList.remove('open');
+        setTimeout(() => card.style.display = 'none', 300);
+        btn.textContent = '📁 Menu';
+    }
+    
+    // Render client menu
+    function renderClientMenu() {
+        const content = document.getElementById('client-menu-content');
+        content.innerHTML = '';
+        
+        const currentVersion = document.getElementById('selVer').value;
+        
+        Object.keys(menuData).forEach(version => {
+            const versionDiv = document.createElement('div');
+            versionDiv.className = 'menu-item';
+            versionDiv.textContent = `📁 ${version}`;
+            versionDiv.onclick = () => toggleVersionMenu(version);
+            
+            const clientList = document.createElement('div');
+            clientList.className = 'submenu';
+            clientList.id = `submenu_${version}`;
+            clientList.style.display = 'none'; // collapsed by default
+            
+            menuData[version].forEach(client => {
+                const clientDiv = document.createElement('div');
+                clientDiv.className = 'menu-item';
+                clientDiv.textContent = `📄 ${client}`;
+                clientDiv.onclick = () => selectClient(version, client);
+                clientList.appendChild(clientDiv);
+            });
+            
+            if (version === currentVersion) {
+                clientList.style.display = 'block';
+            }
+            
+            versionDiv.appendChild(clientList);
+            content.appendChild(versionDiv);
+        });
+    }
+    
+    // Toggle version submenu
+    async function toggleVersionMenu(version) {
+        // If no clients loaded, fetch them
+        if (menuData[version].length === 0) {
+            await fetchClients(version);
+        }
+        
+        // Accordion behavior: expand clicked, collapse others
+        Object.keys(menuData).forEach(v => {
+            const submenu = document.getElementById(`submenu_${v}`);
+            if (submenu) {
+                submenu.style.display = v === version ? 'block' : 'none';
+            }
+        });
+    }
+    
+    // Select client from menu
+    function selectClient(version, client) {
+        document.getElementById('selVer').value = version;
+        onVersionChange(); // to load clients
+        setTimeout(() => {
+            document.getElementById('selClient').value = client;
+            loadData();
+        }, 100); // small delay to ensure clients are loaded
     }
     
     // NEW: Reset modal functions
@@ -1529,36 +1836,138 @@ let GITHUB_TOKEN = "";
         }
     }
     
-    // Edit step inline
-    function editStepTitle(stageIndex, stepIndex) {
+    // Edit step
+    function editStep(stageIndex, stepIndex) {
+        editingStageIndex = stageIndex;
+        editingStepIndex = stepIndex;
         const step = config.stages[stageIndex].steps[stepIndex];
-        const newTitle = prompt('Edit step title:', step.title);
-        if (newTitle && newTitle.trim()) {
-            step.title = newTitle.trim();
-            step.id = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        const mdStr = stepToMarkdown(step);
+        const textarea = document.getElementById('editStepContent');
+        textarea.value = mdStr;
+        textarea.addEventListener('keydown', handleMarkdownShortcuts);
+        document.getElementById('editStepModal').style.display = 'block';
+    }
+    
+    function closeEditStep() {
+        document.getElementById('editStepModal').style.display = 'none';
+    }
+    
+    function saveEditStep() {
+        const mdStr = document.getElementById('editStepContent').value;
+        try {
+            const newStep = markdownToStep(mdStr);
+            newStep.rawMd = mdStr; // Preserve the exact edited Markdown
+            config.stages[editingStageIndex].steps[editingStepIndex] = newStep;
             renderCurrentStage();
             triggerAutosave();
+            closeEditStep();
+        } catch (e) {
+            showError('Invalid Markdown: ' + e.message);
         }
     }
     
-    function editStepCommand(stageIndex, stepIndex) {
-        const step = config.stages[stageIndex].steps[stepIndex];
-        const newCommand = prompt('Edit command:', step.command);
-        if (newCommand !== null) {
-            step.command = newCommand;
-            renderCurrentStage();
-            triggerAutosave();
+    // Convert step object to Markdown string
+    function stepToMarkdown(step) {
+        if (step.rawMd) {
+            return step.rawMd;
+        }
+        // Fallback to reconstructed
+        let md = `### ${step.title || 'Untitled'}\n\n`;
+        md += step.done ? '- [x]\n\n' : '- [ ]\n\n';
+        if (step.notes) {
+            md += `${step.notes}\n\n`;
+        }
+        if (step.command) {
+            md += `\`\`\`\n${step.command}\n\`\`\`\n\n`;
+        }
+        if (step.userNotes) {
+            md += `**Personal Notes:**\n\n${step.userNotes}\n\n`;
+        }
+        return md.trim();
+    }
+    
+    // Convert Markdown string back to step object
+    function markdownToStep(md) {
+        const lines = md.split('\n');
+        const step = { done: false, notes: '', command: '', userNotes: '' };
+        let inCodeBlock = false;
+        let codeBuffer = [];
+        let notesBuffer = [];
+        let collectingNotes = false;
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            
+            if (line.startsWith('### ')) {
+                step.title = line.substring(4).trim();
+                step.id = step.title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+            } else if (line.trim() === '- [x]' || line.trim() === '- [X]') {
+                step.done = true;
+            } else if (line.trim() === '- [ ]') {
+                step.done = false;
+            } else if (line.trim() === '```') {
+                if (inCodeBlock) {
+                    step.command = codeBuffer.join('\n').trim();
+                    inCodeBlock = false;
+                    codeBuffer = [];
+                } else {
+                    inCodeBlock = true;
+                }
+            } else if (inCodeBlock) {
+                codeBuffer.push(line);
+            } else if (line.trim().startsWith('**Personal Notes:**')) {
+                collectingNotes = true;
+                notesBuffer = [];
+            } else if (collectingNotes) {
+                if (line.trim() !== '') {
+                    notesBuffer.push(line);
+                }
+            } else if (line.trim() !== '') {
+                if (step.notes) {
+                    step.notes += '\n' + line.trim();
+                } else {
+                    step.notes = line.trim();
+                }
+            }
+        }
+        
+        if (notesBuffer.length > 0) {
+            step.userNotes = notesBuffer.join('\n').trim();
+        }
+        
+        return step;
+    }
+    
+    // Handle Markdown keyboard shortcuts
+    function handleMarkdownShortcuts(e) {
+        if (e.ctrlKey) {
+            switch (e.key) {
+                case 'b':
+                    e.preventDefault();
+                    insertMarkdown('**', '**');
+                    break;
+                case 'i':
+                    e.preventDefault();
+                    insertMarkdown('*', '*');
+                    break;
+                case '`':
+                    e.preventDefault();
+                    insertMarkdown('`', '`');
+                    break;
+            }
         }
     }
     
-    function editStepNotes(stageIndex, stepIndex) {
-        const step = config.stages[stageIndex].steps[stepIndex];
-        const newNotes = prompt('Edit description:', step.notes);
-        if (newNotes !== null) {
-            step.notes = newNotes;
-            renderCurrentStage();
-            triggerAutosave();
-        }
+    // Insert Markdown formatting around selection
+    function insertMarkdown(before, after) {
+        const textarea = document.getElementById('editStepContent');
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selected = textarea.value.substring(start, end);
+        const replacement = before + selected + after;
+        textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + replacement.length;
+        textarea.focus();
     }
     
     // Add new stage
@@ -1659,18 +2068,58 @@ let GITHUB_TOKEN = "";
             }
         });
         
+        // Add option to create new version
+        const newVerOpt = document.createElement('option');
+        newVerOpt.value = '__new__';
+        newVerOpt.textContent = '➕ Create New Version...';
+        select.appendChild(newVerOpt);
+        
         modal.style.display = 'block';
     }
     
     function closeVersionUpgrade() {
         document.getElementById('versionUpgradeModal').style.display = 'none';
+        // Reset new version input
+        document.getElementById('newVersionDiv').style.display = 'none';
+        document.getElementById('newVersionInput').value = '';
+    }
+    
+    function onTargetVersionChange() {
+        const select = document.getElementById('targetVersionSelect');
+        const newVersionDiv = document.getElementById('newVersionDiv');
+        
+        if (select.value === '__new__') {
+            newVersionDiv.style.display = 'block';
+        } else {
+            newVersionDiv.style.display = 'none';
+            document.getElementById('newVersionInput').value = '';
+        }
     }
     
     async function confirmVersionUpgrade() {
-        const targetVersion = document.getElementById('targetVersionSelect').value;
+        const select = document.getElementById('targetVersionSelect');
+        let targetVersion = select.value;
+        
         if (!targetVersion) {
             showError('Please select a target version');
             return;
+        }
+        
+        // Handle new version creation
+        if (targetVersion === '__new__') {
+            const newVersionInput = document.getElementById('newVersionInput');
+            targetVersion = newVersionInput.value.trim();
+            
+            if (!targetVersion) {
+                showError('Please enter a version number');
+                return;
+            }
+            
+            // Validate version format (should contain numbers and dots)
+            if (!/^\d+(\.\d+)*$/.test(targetVersion)) {
+                showError('Version should contain only numbers and dots (e.g., 24.6)');
+                return;
+            }
         }
         
         const currentClient = document.getElementById('selClient').value;
@@ -1698,7 +2147,7 @@ let GITHUB_TOKEN = "";
             }
             
             // Save to new version folder
-            const newPath = `${targetVersion}/${currentClient}.md`;
+            const newPath = `${VERSIONS_BASE_PATH}/${targetVersion}/${currentClient}.md`;
             const oldPath = CURRENT_YAML_PATH;
             CURRENT_YAML_PATH = newPath;
             FILE_SHA = ""; // New file
@@ -1712,6 +2161,10 @@ let GITHUB_TOKEN = "";
             showSuccess(`Successfully upgraded to version ${targetVersion}`);
             
             closeVersionUpgrade();
+            
+            // Refresh the version list to include the new version
+            await fetchFolders();
+            
             await loadData();
             
         } catch (e) {
@@ -1734,7 +2187,7 @@ let GITHUB_TOKEN = "";
                 const base64Content = e.target.result.split(',')[1];
                 const fileName = `images/${Date.now()}-${file.name}`;
                 const ver = document.getElementById('selVer').value;
-                const imagePath = `${ver}/${fileName}`;
+                const imagePath = `${VERSIONS_BASE_PATH}/${ver}/${fileName}`;
                 
                 // Upload to GitHub
                 const response = await fetch(

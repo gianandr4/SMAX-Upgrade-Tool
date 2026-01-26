@@ -20,7 +20,21 @@ A comprehensive UI tool for SMAX upgrades with wizard-style navigation, inline e
 
 ## File Structure
 
-Each version folder (e.g., `24.4/`) contains Markdown files with YAML front-matter.
+Version folders are organized under the `SMAX/` directory (e.g., `SMAX/24.4/`) and contain Markdown files with YAML front-matter.
+
+### Directory Structure
+```
+SMAX/
+├── 24.4/
+│   ├── client-D.md
+│   ├── client-E.md
+│   └── images/
+├── 24.5/
+│   ├── client-D.md
+│   └── images/
+└── 24.6/
+    └── client-X.md
+```
 
 ### Markdown Format Structure
 
