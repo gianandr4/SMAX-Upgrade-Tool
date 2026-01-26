@@ -19,7 +19,6 @@ config:
 
 Ensure all pods are in 2/2 or 1/1 Running state before starting.
 
-
 ```bash
 kubectl get pods -n {{namespace}}
 ```
@@ -27,16 +26,17 @@ kubectl get pods -n {{namespace}}
 - [x] Step completed
 
 #### Notes
+
 ##### Current
+
 asda
-##### 24.4
-some note
 
 ---
 
 ### Create Docker Registry Secret
 
 Create secret for pulling images from private registry.
+---
 ---
 ---
 ---
@@ -56,6 +56,7 @@ kubectl get secret <image_secret_name> -n <ESM_NAMESPACE>
 ### External DB Backup
 
 Backup BoB, SmartAnalytics, and IdM databases manually.
+---
 ---
 ---
 ---
@@ -86,6 +87,7 @@ Watch pods restart and come back online.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl get pods -n <ESM_NAMESPACE> -w
@@ -100,6 +102,7 @@ kubectl get pods -n <ESM_NAMESPACE> -w
 ### Verify SMAX Version
 
 Confirm the upgrade was successful.
+---
 ---
 ---
 ---
@@ -127,6 +130,7 @@ Test basic functionality: login, create ticket, check reports.
 ---
 ---
 ---
+---
 
 - [x] Step completed
 
@@ -134,6 +138,7 @@ Test basic functionality: login, create ticket, check reports.
 
 ### Test Checklist:
 
+---
 ---
 ---
 ---
