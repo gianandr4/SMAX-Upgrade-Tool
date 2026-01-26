@@ -23,6 +23,21 @@ The tool automatically migrates old format files to the new unified structure:
 - `client-X-managed-steps.yaml` / `client-X-embedded-steps.yaml` - Old step definitions
 - `state-client-X.yaml` - Old state files (automatically merged on first load)
 
+## Format Comparison
+
+| Feature | Markdown (.md) | YAML (.yaml) |
+|---------|----------------|--------------|
+| **Readability** | ⭐⭐⭐⭐⭐ Excellent | ⭐⭐⭐ Good |
+| **Editing Experience** | Natural, like writing docs | Structured, technical |
+| **Git Diffs** | Clean, easy to review | More verbose |
+| **Escape Issues** | None for markdown content | Quotes/special chars need escaping |
+| **Stage Definition** | `# Stage Name` (H1 header) | `stages: - name: "Stage Name"` |
+| **Step Definition** | `## Step Title` (H2 header) | `steps: - id: "step_id"` |
+| **Commands** | ` ```bash ... ``` ` code blocks | `command: "..."` with escaping |
+| **Completion Status** | `- [x]` or `- [ ]` checkboxes | `done: true/false` |
+| **Personal Notes** | `**Personal Notes:** text` | `userNotes: "text"` |
+| **Best For** | Documentation-heavy workflows | Programmatic generation |
+
 ## File Format Options
 
 ### Option 1: Markdown with Front-Matter (Recommended)
