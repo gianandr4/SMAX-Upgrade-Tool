@@ -4,45 +4,20 @@ https://gianandr4.github.io/SMAX-Upgrade-Tool/
 
 ## File Structure
 
-Each version folder (e.g., `24.4/`) contains:
+Each version folder (e.g., `24.4/`) contains markdown files for each client.
 
-### Supported File Formats
+### File Format
 
-**Markdown Format (Recommended):**
-- `client-D.md` - Markdown with YAML front-matter
-- `client-E.md` - Better for documentation-heavy workflows
-- Natural syntax for steps, notes, and commands
+**Markdown Format (Required):**
+- `client-D.md` - Example client D configuration
+- `client-E.md` - Example client E configuration with comprehensive stages
+- `template.md` - Comprehensive template for new clients
 
-**YAML Format:**
-- `client-A.yaml` - Traditional YAML structure
-- `client-B.yaml` - Good for programmatic generation
-- `client-C.yaml` - Compact structured format
+All files use markdown with YAML front-matter.
 
-### Legacy Files (Backward Compatible)
-The tool automatically migrates old format files to the new unified structure:
-- `client-X-managed-steps.yaml` / `client-X-embedded-steps.yaml` - Old step definitions
-- `state-client-X.yaml` - Old state files (automatically merged on first load)
+## File Format
 
-## Format Comparison
-
-| Feature | Markdown (.md) | YAML (.yaml) |
-|---------|----------------|--------------|
-| **Readability** | ⭐⭐⭐⭐⭐ Excellent | ⭐⭐⭐ Good |
-| **Editing Experience** | Natural, like writing docs | Structured, technical |
-| **Git Diffs** | Clean, easy to review | More verbose |
-| **Escape Issues** | None for markdown content | Quotes/special chars need escaping |
-| **Stage Definition** | `# Stage Name` (H1 header) | `stages: - name: "Stage Name"` |
-| **Step Definition** | `## Step Title` (H2 header) | `steps: - id: "step_id"` |
-| **Commands** | ` ```bash ... ``` ` code blocks | `command: "..."` with escaping |
-| **Completion Status** | `- [x]` or `- [ ]` checkboxes | `done: true/false` |
-| **Personal Notes** | `**Personal Notes:** text` | `userNotes: "text"` |
-| **Best For** | Documentation-heavy workflows | Programmatic generation |
-
-## File Format Options
-
-### Option 1: Markdown with Front-Matter (Recommended)
-
-Markdown provides a more natural, readable format especially when dealing with rich documentation and notes.
+Markdown provides a natural, readable format for documentation-heavy workflows with excellent Git diffs.
 
 **Structure:**
 ```markdown
@@ -54,9 +29,11 @@ config:
   username: "admin"
 ---
 
-# Preparation
+# CLIENT A - SMAX Upgrade 24.4 → 24.6
 
-## SMAX Health Check
+## Preparation
+
+### SMAX Health Check
 
 Ensure all pods are running before starting.
 
@@ -71,12 +48,12 @@ Verified all pods healthy on 2024-01-15
 
 ---
 
-## Create Docker Registry Secret
+### Create Docker Registry Secret
 
 ```bash
 kubectl create secret docker-registry <image_secret_name> \
   --docker-username=<username> \
-  --docker-****** \
+  --docker-password=<password> \
   --docker-server=<registry_server> \
   -n <namespace>
 ```
@@ -85,9 +62,9 @@ kubectl create secret docker-registry <image_secret_name> \
 
 ---
 
-# Upgrade
+## Upgrade
 
-## Apply Upgrade
+### Apply Upgrade
 
 ```bash
 ./upgrade.sh -n {{namespace}} -v {{version}}
@@ -98,60 +75,27 @@ kubectl create secret docker-registry <image_secret_name> \
 ---
 ```
 
+**Structure Details:**
+- **H1 (#)**: Document title (e.g., "CLIENT A - SMAX Upgrade 24.4 → 24.6")
+- **H2 (##)**: Stage name (e.g., "Preparation", "Upgrade", "Verification")
+- **H3 (###)**: Step title (e.g., "SMAX Health Check", "Apply Upgrade")
+- **Code blocks**: Commands with `{{variable}}` or `<variable>` placeholders
+- **Checkboxes**: `- [x]` for completed, `- [ ]` for incomplete
+- **Personal Notes**: Marked with `**Personal Notes:**` heading
+
 **Benefits:**
 - ✅ More readable and natural for documentation
-- ✅ No YAML escaping issues for markdown content
+- ✅ No escaping issues for markdown content
 - ✅ Better Git diffs and easier editing
 - ✅ Familiar format (used in Jekyll, Hugo, etc.)
-- ✅ Stages defined by H1 headers (`#`)
-- ✅ Steps defined by H2 headers (`##`)
-- ✅ Checkboxes indicate completion: `- [x]` or `- [ ]`
-- ✅ Personal notes marked with `**Personal Notes:**`
-
-### Option 2: YAML Structure
-
-```yaml
-config:
-  namespace: "itsma-clienta"
-  ESM_NAMESPACE: "itsma-clienta"
-  version: "24.4"
-  registry_server: "registry.example.com"
-  username: "admin"
-  password: "changeme"
-  image_secret_name: "regcred"
-
-stages:
-  - name: "Preparation"
-    steps:
-      - id: "health_check"
-        title: "SMAX Health Check"
-        notes: "Ensure all pods are running before starting."
-        command: "kubectl get pods -n {{namespace}}"
-        done: false
-        userNotes: ""
-      
-      - id: "create_secret"
-        title: "Create Docker Registry Secret"
-        notes: "Create secret for pulling images."
-        command: "kubectl create secret docker-registry <image_secret_name> --docker-username=<username> --docker-password=<password> --docker-server=<registry_server> -n <ESM_NAMESPACE>"
-        done: false
-        userNotes: "**Completed**: Secret created successfully"
-  
-  - name: "Upgrade"
-    steps:
-      - id: "apply_upgrade"
-        title: "Apply Suite Upgrade"
-        command: "./upgrade.sh -n {{namespace}} -v {{version}}"
-        done: false
-        userNotes: ""
-```
+- ✅ Clear hierarchy: Title > Stage > Step
 
 ## Usage
 
 1. **Deploy**: Host on GitHub Pages or any web server
 2. **Open**: Navigate to the tool in your browser
 3. **Authenticate**: Enter GitHub Personal Access Token (requires repo write access)
-4. **Select**: Choose version and client from dropdowns
+4. **Select**: Choose version and client from dropdowns (dynamically loaded from repository)
 5. **Navigate**: Use stage tabs or Previous/Next buttons to navigate through stages
 6. **Work**: Check off steps as completed, add personal notes in markdown
 7. **Save**: Click "Save Progress" to persist all changes to GitHub
@@ -163,8 +107,9 @@ stages:
 - ✅ **Wizard View**: Navigate through one stage at a time with Previous/Next buttons
 - ✅ **Progress Tracking**: Visual progress bar showing completion across all stages
 - ✅ **Stage Tabs**: Quick navigation between stages with completion indicators
-- ✅ **Dual Format Support**: Choose between Markdown (.md) or YAML (.yaml) files
+- ✅ **Markdown Format**: Single format for all client files
 - ✅ **Unified Configuration**: Single file per client containing configuration, state, and notes
+- ✅ **Dynamic Loading**: Version folders and client files are scanned automatically
 
 ### Step Management
 - ✅ **Checkbox Tracking**: Mark steps as done/undone with visual feedback
@@ -176,19 +121,7 @@ stages:
 - ✅ **Per-Step Notes**: Add personal notes to each step in markdown format
 - ✅ **Live Preview**: Real-time markdown rendering as you type
 - ✅ **Rich Formatting**: Support for headings, lists, code blocks, bold, italic, etc.
-- ✅ **Persistent Storage**: Notes saved back to file (YAML or Markdown)
-- ✅ **Native Markdown Files**: Use .md files for better readability and editing experience
-
-### File Format Support
-- ✅ **Auto-Detection**: Automatically detects and loads .md or .yaml files
-- ✅ **Markdown Front-Matter**: YAML configuration in front-matter, content in markdown
-- ✅ **Bi-Directional Conversion**: Save changes back in original format
-- ✅ **Format Choice**: Pick the format that works best for your workflow
-
-### Backward Compatibility
-- ✅ **Auto-Migration**: Automatically converts old format files to new unified structure
-- ✅ **State Merging**: Merges old separate state files into unified format
-- ✅ **Dynamic Client Loading**: Scans version folder for client files (.yaml or .md)
+- ✅ **Persistent Storage**: Notes saved back to markdown file
 
 ### Technical Features
 - ✅ **GitHub API Integration**: Direct read/write to repository
@@ -214,6 +147,15 @@ kubectl create secret docker-registry <image_secret_name> \
 
 Both formats are replaced with actual values from the `config` section.
 
+## Creating a New Client
+
+1. Copy `template.md` to `24.4/client-new.md` (or appropriate version folder)
+2. Update the YAML front-matter with client-specific configuration
+3. Update the H1 title with client name and version
+4. Customize stages and steps as needed
+5. Commit and push to repository
+6. Refresh the tool and select the new client
+
 ## Screenshots
 
 ![SMAX Upgrade Tool UI](https://github.com/user-attachments/assets/ee023815-19c0-44b4-a495-7853036521c0)
@@ -226,3 +168,24 @@ The tool is a single-page application built with:
 - [marked](https://marked.js.org/) for markdown rendering
 - GitHub API for persistence
 
+## GitHub Token Permissions
+
+Required permissions for GitHub Personal Access Token:
+- `repo` (Full control of private repositories)
+
+## Security
+
+- Token is stored only in browser memory (not persisted)
+- All API calls use HTTPS
+- Markdown content is sanitized before rendering
+- XSS protection in place
+
+## Browser Support
+
+- Chrome/Edge (latest)
+- Firefox (latest)
+- Safari (latest)
+
+## License
+
+MIT License - See repository for details
