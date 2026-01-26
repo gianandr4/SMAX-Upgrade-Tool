@@ -1,5 +1,6 @@
 # SMAX-Upgrade-Tool
 A UI tool for SMAX upgrades streamlining and notes
+https://gianandr4.github.io/SMAX-Upgrade-Tool/
 
 ## File Structure
 
