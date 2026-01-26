@@ -9,9 +9,11 @@ config:
   image_secret_name: harbor-secret
 ---
 
-# Pre-Flight Checks
+# Client E Upgrade to v24.4
 
-## Review Release Notes
+## Pre-Flight Checks
+
+### Review Release Notes
 
 Read the 24.4 release notes and understand new features and breaking changes.
 
@@ -35,7 +37,7 @@ Read the 24.4 release notes and understand new features and breaking changes.
 
 ---
 
-## Check System Resources
+### Check System Resources
 
 Verify adequate CPU, memory, and storage for upgrade.
 
@@ -48,7 +50,7 @@ df -h
 
 ---
 
-## Backup Current Configuration
+### Backup Current Configuration
 
 Export all ConfigMaps and Secrets.
 
@@ -61,16 +63,16 @@ kubectl get secrets -n {{namespace}} -o yaml > backup-secrets.yaml
 
 ---
 
-# Environment Preparation
+## Environment Preparation
 
-## Create Registry Secret
+### Create Registry Secret
 
 Setup authentication for private Docker registry.
 
 ```bash
 kubectl create secret docker-registry <image_secret_name> \
   --docker-username=<username> \
-  --docker-****** \
+  --docker-password=<password> \
   --docker-server=<registry_server> \
   -n <ESM_NAMESPACE>
 ```
@@ -79,7 +81,7 @@ kubectl create secret docker-registry <image_secret_name> \
 
 ---
 
-## Download Upgrade Package
+### Download Upgrade Package
 
 Pull the upgrade images to local registry.
 
@@ -93,9 +95,9 @@ docker pull <registry_server>/smax/autopass:{{version}}
 
 ---
 
-# Upgrade Execution
+## Upgrade Execution
 
-## Enable Maintenance Mode
+### Enable Maintenance Mode
 
 Put SMAX in maintenance mode to prevent user access during upgrade.
 
@@ -114,7 +116,7 @@ Put SMAX in maintenance mode to prevent user access during upgrade.
 
 ---
 
-## Execute Upgrade Script
+### Execute Upgrade Script
 
 Run the automated upgrade process.
 
@@ -126,7 +128,7 @@ Run the automated upgrade process.
 
 ---
 
-## Monitor Pod Status
+### Monitor Pod Status
 
 Watch all pods restart and achieve ready state.
 
@@ -139,9 +141,9 @@ kubectl wait --for=condition=Ready pods --all -n {{namespace}} --timeout=30m
 
 ---
 
-# Post-Upgrade Validation
+## Post-Upgrade Validation
 
-## Verify Version
+### Verify Version
 
 Check that all components are running the new version.
 
@@ -153,7 +155,7 @@ kubectl get deployments -n {{namespace}} -o jsonpath='{range .items[*]}{.metadat
 
 ---
 
-## Health Check
+### Health Check
 
 Verify all services are healthy and responding.
 
@@ -166,7 +168,7 @@ curl -k https://smax.example.com/health
 
 ---
 
-## Functional Testing
+### Functional Testing
 
 Test core application functionality.
 
@@ -198,7 +200,7 @@ Test core application functionality.
 
 ---
 
-## Disable Maintenance Mode
+### Disable Maintenance Mode
 
 Return SMAX to normal operation.
 
