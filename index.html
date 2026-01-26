@@ -679,13 +679,18 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 continue;
             }
             
-            // H5 = Subsection within notes
+            // H5 = Subsection within notes (version-specific notes)
             if (collectingNotes && line.startsWith('##### ')) {
+                // Save current notes as "Current" if we haven't started a subsection yet
+                if (!currentSubsection && notesBuffer.length > 0) {
+                    currentStep.userNotes['Current'] = notesBuffer.join('\n').trim();
+                    notesBuffer = [];
+                }
                 // Save previous subsection if any
                 if (currentSubsection && subsectionBuffer.length > 0) {
                     currentStep.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
                 }
-                // Start new subsection
+                // Start new version-specific subsection
                 currentSubsection = line.substring(6).trim();
                 subsectionBuffer = [];
                 collectingSubsection = true;
@@ -696,9 +701,11 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             if (collectingNotes && currentStep) {
                 // Check if we've reached the next H3, H2, or H1 (end of notes section)
                 if (line.startsWith('### ') || line.startsWith('## ') || line.startsWith('# ')) {
-                    // Save any remaining subsection
+                    // Save any remaining content
                     if (currentSubsection && subsectionBuffer.length > 0) {
                         currentStep.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
+                    } else if (!currentSubsection && notesBuffer.length > 0) {
+                        currentStep.userNotes['Current'] = notesBuffer.join('\n').trim();
                     }
                     collectingNotes = false;
                     collectingSubsection = false;
@@ -707,12 +714,8 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                     subsectionBuffer.push(line);
                     continue;
                 } else {
-                    // Content before first subsection goes to a default section
-                    if (!currentSubsection) {
-                        currentSubsection = 'Current';
-                        collectingSubsection = true;
-                        subsectionBuffer = [line];
-                    }
+                    // Content before first ##### goes to Current
+                    notesBuffer.push(line);
                     continue;
                 }
             }
@@ -730,6 +733,10 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         // Add last step and stage
         if (currentStep && currentStage) {
             if (collectingNotes) {
+                // Save Current notes if any
+                if (!currentSubsection && notesBuffer.length > 0) {
+                    currentStep.userNotes['Current'] = notesBuffer.join('\n').trim();
+                }
                 // Save any remaining subsection
                 if (currentSubsection && subsectionBuffer.length > 0) {
                     currentStep.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
@@ -1372,8 +1379,32 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             notePreview.id = `note-preview_${currentStageIndex}_${stepIndex}`;
             notePreview.style.marginBottom = '10px';
             if (step.userNotes && Object.keys(step.userNotes).length > 0) {
-                const notesMd = userNotesToMarkdown(step.userNotes);
-                notePreview.innerHTML = marked.parse(notesMd);
+                // Render each version in its own block
+                notePreview.innerHTML = '';
+                for (const [version, content] of Object.entries(step.userNotes)) {
+                    if (content && content.trim()) {
+                        const versionBlock = document.createElement('div');
+                        versionBlock.className = 'note-version-block';
+                        versionBlock.style.border = '1px solid var(--border)';
+                        versionBlock.style.borderRadius = '6px';
+                        versionBlock.style.padding = '10px';
+                        versionBlock.style.marginBottom = '8px';
+                        versionBlock.style.backgroundColor = 'var(--bg)';
+                        
+                        const versionHeader = document.createElement('div');
+                        versionHeader.style.fontWeight = 'bold';
+                        versionHeader.style.marginBottom = '8px';
+                        versionHeader.style.color = 'var(--primary)';
+                        versionHeader.textContent = version === 'Current' ? '📝 Current Notes' : `📚 ${version} Notes`;
+                        
+                        const versionContent = document.createElement('div');
+                        versionContent.innerHTML = marked.parse(content);
+                        
+                        versionBlock.appendChild(versionHeader);
+                        versionBlock.appendChild(versionContent);
+                        notePreview.appendChild(versionBlock);
+                    }
+                }
             } else {
                 notePreview.innerHTML = '<span style="color: #586069; font-style: italic;">No notes yet. Click Edit to add some.</span>';
             }
@@ -1397,7 +1428,37 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 const preview = document.getElementById(`note-preview_${currentStageIndex}_${stepIndex}`);
                 if (preview) {
                     if (noteTextarea.value) {
-                        preview.innerHTML = marked.parse(noteTextarea.value);
+                        // Parse the current textarea content and show blocks
+                        const parsedNotes = markdownToUserNotes(noteTextarea.value);
+                        if (Object.keys(parsedNotes).length > 0) {
+                            preview.innerHTML = '';
+                            for (const [version, content] of Object.entries(parsedNotes)) {
+                                if (content && content.trim()) {
+                                    const versionBlock = document.createElement('div');
+                                    versionBlock.className = 'note-version-block';
+                                    versionBlock.style.border = '1px solid var(--border)';
+                                    versionBlock.style.borderRadius = '6px';
+                                    versionBlock.style.padding = '10px';
+                                    versionBlock.style.marginBottom = '8px';
+                                    versionBlock.style.backgroundColor = 'var(--bg)';
+                                    
+                                    const versionHeader = document.createElement('div');
+                                    versionHeader.style.fontWeight = 'bold';
+                                    versionHeader.style.marginBottom = '8px';
+                                    versionHeader.style.color = 'var(--primary)';
+                                    versionHeader.textContent = version === 'Current' ? '📝 Current Notes' : `📚 ${version} Notes`;
+                                    
+                                    const versionContent = document.createElement('div');
+                                    versionContent.innerHTML = marked.parse(content);
+                                    
+                                    versionBlock.appendChild(versionHeader);
+                                    versionBlock.appendChild(versionContent);
+                                    preview.appendChild(versionBlock);
+                                }
+                            }
+                        } else {
+                            preview.innerHTML = marked.parse(noteTextarea.value);
+                        }
                     } else {
                         preview.innerHTML = '<span style="color: #586069; font-style: italic;">No notes yet. Click Edit to add some.</span>';
                     }
@@ -1505,8 +1566,32 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         // Update preview and switch back to preview mode
         if (preview) {
             if (Object.keys(config.stages[stageIndex].steps[stepIndex].userNotes).length > 0) {
-                const notesMd = userNotesToMarkdown(config.stages[stageIndex].steps[stepIndex].userNotes);
-                preview.innerHTML = marked.parse(notesMd);
+                // Render each version in its own block
+                preview.innerHTML = '';
+                for (const [version, content] of Object.entries(config.stages[stageIndex].steps[stepIndex].userNotes)) {
+                    if (content && content.trim()) {
+                        const versionBlock = document.createElement('div');
+                        versionBlock.className = 'note-version-block';
+                        versionBlock.style.border = '1px solid var(--border)';
+                        versionBlock.style.borderRadius = '6px';
+                        versionBlock.style.padding = '10px';
+                        versionBlock.style.marginBottom = '8px';
+                        versionBlock.style.backgroundColor = 'var(--bg)';
+                        
+                        const versionHeader = document.createElement('div');
+                        versionHeader.style.fontWeight = 'bold';
+                        versionHeader.style.marginBottom = '8px';
+                        versionHeader.style.color = 'var(--primary)';
+                        versionHeader.textContent = version === 'Current' ? '📝 Current Notes' : `📚 ${version} Notes`;
+                        
+                        const versionContent = document.createElement('div');
+                        versionContent.innerHTML = marked.parse(content);
+                        
+                        versionBlock.appendChild(versionHeader);
+                        versionBlock.appendChild(versionContent);
+                        preview.appendChild(versionBlock);
+                    }
+                }
             } else {
                 preview.innerHTML = '<span style="color: #586069; font-style: italic;">No notes yet. Click Edit to add some.</span>';
             }
@@ -1975,8 +2060,15 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         }
         if (step.userNotes && Object.keys(step.userNotes).length > 0) {
             md += `#### Notes\n\n`;
+            // Put Current notes first (without ##### header)
+            if (step.userNotes['Current']) {
+                md += `${step.userNotes['Current']}\n\n`;
+            }
+            // Then add version-specific notes with ##### headers
             for (const [subsection, content] of Object.entries(step.userNotes)) {
-                md += `##### ${subsection}\n\n${content}\n\n`;
+                if (subsection !== 'Current' && content.trim()) {
+                    md += `##### ${subsection}\n\n${content}\n\n`;
+                }
             }
         }
         return md.trim();
@@ -2002,33 +2094,120 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         let currentSubsection = '';
         let subsectionBuffer = [];
         let inNotesSection = false;
+        let collectingCurrent = false;
         
         for (const line of lines) {
             if (line.startsWith('#### ')) {
                 inNotesSection = true;
+                collectingCurrent = true; // Start collecting current notes
                 continue;
             }
             if (!inNotesSection) continue;
             
             if (line.startsWith('##### ')) {
-                // Save previous subsection
+                // Save current notes as Current if we were collecting them
+                if (collectingCurrent && subsectionBuffer.length > 0) {
+                    userNotes['Current'] = subsectionBuffer.join('\n').trim();
+                    subsectionBuffer = [];
+                    collectingCurrent = false;
+                }
+                // Save previous subsection if any
                 if (currentSubsection && subsectionBuffer.length > 0) {
                     userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
                 }
-                // Start new subsection
+                // Start new version-specific subsection
                 currentSubsection = line.substring(6).trim();
                 subsectionBuffer = [];
-            } else if (currentSubsection && line.trim() !== '') {
+            } else if (line.trim() !== '') {
                 subsectionBuffer.push(line);
             }
         }
         
-        // Save final subsection
-        if (currentSubsection && subsectionBuffer.length > 0) {
+        // Save final content
+        if (collectingCurrent && subsectionBuffer.length > 0) {
+            userNotes['Current'] = subsectionBuffer.join('\n').trim();
+        } else if (currentSubsection && subsectionBuffer.length > 0) {
             userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
         }
         
         return userNotes;
+    }
+    
+    // Convert Markdown string back to step object
+    function markdownToStep(md) {
+        const lines = md.split('\n');
+        const step = { done: false, notes: '', command: '', userNotes: {} };
+        let inCodeBlock = false;
+        let codeBuffer = [];
+        let notesBuffer = [];
+        let collectingNotes = false;
+        let currentSubsection = '';
+        let subsectionBuffer = [];
+        let collectingCurrent = false;
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            
+            if (line.startsWith('### ')) {
+                step.title = line.substring(4).trim();
+                step.id = step.title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+            } else if (line.trim() === '- [x]' || line.trim() === '- [X]') {
+                step.done = true;
+            } else if (line.trim() === '- [ ]') {
+                step.done = false;
+            } else if (line.trim() === '```') {
+                if (inCodeBlock) {
+                    step.command = codeBuffer.join('\n').trim();
+                    inCodeBlock = false;
+                    codeBuffer = [];
+                } else {
+                    inCodeBlock = true;
+                }
+            } else if (inCodeBlock) {
+                codeBuffer.push(line);
+            } else if (line.startsWith('#### ')) {
+                const sectionTitle = line.substring(5).trim();
+                if (sectionTitle.toLowerCase().includes('notes') || sectionTitle.toLowerCase().includes('note')) {
+                    collectingNotes = true;
+                    currentSubsection = '';
+                    subsectionBuffer = [];
+                    collectingCurrent = true; // Start with Current notes
+                }
+            } else if (collectingNotes && line.startsWith('##### ')) {
+                // Save current notes as Current if we were collecting them
+                if (collectingCurrent && subsectionBuffer.length > 0) {
+                    step.userNotes['Current'] = subsectionBuffer.join('\n').trim();
+                    subsectionBuffer = [];
+                    collectingCurrent = false;
+                }
+                // Save previous subsection if any
+                if (currentSubsection && subsectionBuffer.length > 0) {
+                    step.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
+                }
+                // Start new version-specific subsection
+                currentSubsection = line.substring(6).trim();
+                subsectionBuffer = [];
+            } else if (collectingNotes) {
+                if (line.trim() !== '') {
+                    subsectionBuffer.push(line);
+                }
+            } else if (line.trim() !== '') {
+                if (step.notes) {
+                    step.notes += '\n' + line.trim();
+                } else {
+                    step.notes = line.trim();
+                }
+            }
+        }
+        
+        // Save final content
+        if (collectingCurrent && subsectionBuffer.length > 0) {
+            step.userNotes['Current'] = subsectionBuffer.join('\n').trim();
+        } else if (currentSubsection && subsectionBuffer.length > 0) {
+            step.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
+        }
+        
+        return step;
     }
     
     // Handle Markdown keyboard shortcuts

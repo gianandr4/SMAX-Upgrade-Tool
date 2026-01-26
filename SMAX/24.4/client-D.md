@@ -27,10 +27,16 @@ kubectl get pods -n {{namespace}}
 - [x] Step completed
 
 #### Notes
-##### Current
-asda
+
+Current version notes here
+
 ##### 24.4
-some note
+
+Version-specific notes for 24.4
+
+##### 24.3
+
+Version-specific notes for 24.3
 
 ---
 
