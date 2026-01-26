@@ -85,9 +85,8 @@
 <div class="controls">
     <input type="password" id="ghToken" placeholder="Paste GitHub Token" onchange="connect()">
     
-    <select id="selVer" onchange="loadData()">
-        <option value="24.1">Version 24.1</option>
-        <option value="24.2">Version 24.2</option>
+    <select id="selVer" onchange="onVersionChange()">
+        <option value="">Select version...</option>
     </select>
 
     <select id="selClient" onchange="loadData()">
@@ -243,14 +242,12 @@ let GITHUB_TOKEN = "";
             // Clear existing options
             clientSelect.innerHTML = "";
             
-            // Find all client files (both .yaml and .md, excluding state- and template files)
+            // Find all client markdown files (excluding README.md)
             const clientFiles = items.filter(item => 
                 item.type === 'file' && 
-                (item.name.endsWith('.yaml') || item.name.endsWith('.md')) &&
-                !item.name.startsWith('state-') &&
-                !item.name.startsWith('managed-') &&
-                !item.name.startsWith('embedded-') &&
-                item.name !== 'README.md'
+                item.name.endsWith('.md') &&
+                item.name !== 'README.md' &&
+                item.name !== 'template.md'
             );
             
             if (clientFiles.length === 0) {
@@ -261,15 +258,9 @@ let GITHUB_TOKEN = "";
             // Extract client names
             const clients = new Set();
             clientFiles.forEach(file => {
-                // Extract client name from filename (e.g., "client-A-managed-steps.yaml" -> "client-A")
-                const match = file.name.match(/^(.+?)-(?:managed|embedded)-steps\.yaml$/);
-                if (match) {
-                    clients.add(match[1]);
-                } else {
-                    // New format: just client name (e.g., "client-A.yaml" or "client-A.md")
-                    const clientName = file.name.replace(/\.(yaml|md)$/, '');
-                    clients.add(clientName);
-                }
+                // Extract client name from filename (e.g., "client-A.md")
+                const clientName = file.name.replace(/\.md$/, '');
+                clients.add(clientName);
             });
             
             clients.forEach(client => {
@@ -303,10 +294,12 @@ let GITHUB_TOKEN = "";
     }
     
     // NEW: Parse markdown content into stages and steps
+    // H1 = Title, H2 = Stage, H3 = Step
     function parseMarkdownStages(markdown) {
         const stages = [];
         const lines = markdown.split('\n');
         
+        let documentTitle = null;
         let currentStage = null;
         let currentStep = null;
         let collectingCommand = false;
@@ -317,8 +310,17 @@ let GITHUB_TOKEN = "";
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             
-            // H1 = New Stage
-            if (line.startsWith('# ')) {
+            // H1 = Document Title (only first one is used)
+            if (line.startsWith('# ') && !line.startsWith('## ')) {
+                if (!documentTitle) {
+                    documentTitle = line.substring(2).trim();
+                    console.log(`[SMAX Tool] Document title: ${documentTitle}`);
+                }
+                continue;
+            }
+            
+            // H2 = New Stage
+            if (line.startsWith('## ') && !line.startsWith('### ')) {
                 if (currentStep && currentStage) {
                     currentStage.steps.push(currentStep);
                 }
@@ -327,7 +329,7 @@ let GITHUB_TOKEN = "";
                 }
                 
                 currentStage = {
-                    name: line.substring(2).trim(),
+                    name: line.substring(3).trim(),
                     steps: []
                 };
                 currentStep = null;
@@ -336,13 +338,13 @@ let GITHUB_TOKEN = "";
                 continue;
             }
             
-            // H2 = New Step
-            if (line.startsWith('## ')) {
+            // H3 = New Step
+            if (line.startsWith('### ')) {
                 if (currentStep && currentStage) {
                     currentStage.steps.push(currentStep);
                 }
                 
-                const title = line.substring(3).trim();
+                const title = line.substring(4).trim();
                 currentStep = {
                     id: title.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
                     title: title,
@@ -501,6 +503,15 @@ let GITHUB_TOKEN = "";
         }
     }
 
+    // NEW: Handle version change - refresh client list
+    async function onVersionChange() {
+        const ver = document.getElementById('selVer').value;
+        if (!ver) return;
+        
+        await fetchClients(ver);
+        // Don't auto-load data, wait for user to select a client
+    }
+    
     async function loadData() {
         showError(""); 
         const ver = document.getElementById('selVer').value;
@@ -511,174 +522,16 @@ let GITHUB_TOKEN = "";
             return;
         }
 
-        // Try markdown format first, then YAML
+        // Load markdown format only
         const mdPath = `${ver}/${client}.md`;
-        const yamlPath = `${ver}/${client}.yaml`;
         
-        // Try markdown first
-        if (await tryLoadMarkdown(ver, client, mdPath)) {
-            return;
-        }
-        
-        // Fall back to YAML
-        CURRENT_YAML_PATH = yamlPath;
-
-        try {
-            console.log(`[SMAX Tool] Loading unified YAML from ${CURRENT_YAML_PATH}...`);
-            
-            let yamlContent;
-            
-            if (GITHUB_TOKEN) {
-                // Load from GitHub
-                const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${CURRENT_YAML_PATH}`, {
-                    headers: { Authorization: `token ${GITHUB_TOKEN}` }
-                });
-                
-                if (resp.status === 404) {
-                    // Try to migrate from old format
-                    console.log('[SMAX Tool] New format not found, attempting migration from old format...');
-                    await migrateFromOldFormat(ver, client);
-                    return; // migrateFromOldFormat will call loadData again
-                }
-                
-                if (!resp.ok) {
-                    const errorData = await resp.json();
-                    throw new Error(`GitHub API: ${errorData.message || resp.statusText}`);
-                }
-                
-                const data = await resp.json();
-                FILE_SHA = data.sha;
-                yamlContent = atob(data.content);
-            } else {
-                // Load from local file (development mode)
-                const resp = await fetch(CURRENT_YAML_PATH);
-                if (!resp.ok) throw new Error(`YAML file not found: ${CURRENT_YAML_PATH}`);
-                yamlContent = await resp.text();
-            }
-            
-            config = jsyaml.load(yamlContent);
-            
-            if (!config) {
-                throw new Error('Invalid YAML structure');
-            }
-            
-            // Backward compatibility: Convert old 'steps' to 'stages'
-            if (config.steps && !config.stages) {
-                console.log('[SMAX Tool] Converting old steps format to stages...');
-                config.stages = [{
-                    name: 'Upgrade',
-                    steps: config.steps
-                }];
-                delete config.steps;
-            }
-            
-            if (!config.stages || config.stages.length === 0) {
-                throw new Error('Invalid YAML structure: missing stages');
-            }
-            
-            // Ensure each step has required fields
-            config.stages.forEach(stage => {
-                stage.steps = stage.steps || [];
-                stage.steps.forEach(step => {
-                    step.done = step.done || false;
-                    step.notes = step.notes || '';
-                });
-            });
-            
-            console.log(`[SMAX Tool] Loaded ${config.stages.length} stage(s)`);
-            
-            if (GITHUB_TOKEN) {
-                document.getElementById('syncInd').classList.add('online');
-                document.getElementById('syncStat').innerText = `Synced: ${ver}/${client}`;
-                console.log('[SMAX Tool] Data synced from GitHub');
-            }
-            
-            currentStageIndex = 0;
-            renderVars();
-            renderStageTabs();
-            renderCurrentStage();
-            updateProgress();
-            
-        } catch (e) {
-            console.error('[SMAX Tool] loadData error:', e);
-            showError(e.message);
+        if (!await tryLoadMarkdown(ver, client, mdPath)) {
+            showError(`Client file not found: ${mdPath}`);
         }
     }
     
     // NEW: Migrate from old format to new unified format
-    async function migrateFromOldFormat(ver, client) {
-        try {
-            console.log('[SMAX Tool] Migrating from old format...');
-            
-            // Try to load old managed or embedded steps file
-            let oldStepsPath = `${ver}/${client}-managed-steps.yaml`;
-            let oldStatePath = `${ver}/state-${client}.yaml`;
-            
-            let stepsResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${oldStepsPath}`, {
-                headers: { Authorization: `token ${GITHUB_TOKEN}` }
-            });
-            
-            if (stepsResp.status === 404) {
-                // Try embedded format
-                oldStepsPath = `${ver}/${client}-embedded-steps.yaml`;
-                stepsResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${oldStepsPath}`, {
-                    headers: { Authorization: `token ${GITHUB_TOKEN}` }
-                });
-            }
-            
-            if (!stepsResp.ok) {
-                throw new Error(`No client configuration found for ${client}`);
-            }
-            
-            const stepsData = await stepsResp.json();
-            const oldConfig = jsyaml.load(atob(stepsData.content));
-            
-            // Load old state file if exists
-            let state = {};
-            const stateResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${oldStatePath}`, {
-                headers: { Authorization: `token ${GITHUB_TOKEN}` }
-            });
-            
-            if (stateResp.ok) {
-                const stateData = await stateResp.json();
-                state = jsyaml.load(atob(stateData.content)) || {};
-            }
-            
-            // Create new unified config
-            const newConfig = {
-                config: oldConfig.config || {},
-                stages: [{
-                    name: 'Upgrade',
-                    steps: (oldConfig.steps || []).map(step => {
-                        return {
-                            ...step,
-                            done: state[`s_done_${step.id}`] === 'true',
-                            notes: ''
-                        };
-                    })
-                }]
-            };
-            
-            // Apply variable state
-            Object.keys(newConfig.config).forEach(key => {
-                if (state[`v_${key}`]) {
-                    newConfig.config[key] = state[`v_${key}`];
-                }
-            });
-            
-            // Save new format
-            config = newConfig;
-            FILE_SHA = ""; // Will create new file
-            await saveData();
-            
-            console.log('[SMAX Tool] Migration complete, reloading...');
-            
-        } catch (e) {
-            console.error('[SMAX Tool] Migration error:', e);
-            showError(`Migration failed: ${e.message}`);
-        }
-    }
-
+    
     // Error handling with better logging
     function showError(msg) {
         const box = document.getElementById('errorBox');
@@ -1146,16 +999,22 @@ let GITHUB_TOKEN = "";
     }
 
     // Convert config to markdown format
-    function convertToMarkdown() {
+    // H1 = Title, H2 = Stage, H3 = Step
+    function convertToMarkdown(title) {
         let md = '---\n';
         md += jsyaml.dump({ config: config.config });
         md += '---\n\n';
         
+        // Add document title if provided
+        if (title) {
+            md += `# ${title}\n\n`;
+        }
+        
         config.stages.forEach(stage => {
-            md += `# ${stage.name}\n\n`;
+            md += `## ${stage.name}\n\n`;
             
             stage.steps.forEach(step => {
-                md += `## ${step.title}\n\n`;
+                md += `### ${step.title}\n\n`;
                 
                 if (step.notes) {
                     md += `${step.notes}\n\n`;
@@ -1195,15 +1054,8 @@ let GITHUB_TOKEN = "";
         }
         
         try {
-            let fileContent;
-            
-            // Check if current file is markdown or YAML
-            if (CURRENT_YAML_PATH.endsWith('.md')) {
-                fileContent = convertToMarkdown();
-            } else {
-                fileContent = jsyaml.dump(config);
-            }
-            
+            // Always save as markdown
+            const fileContent = convertToMarkdown();
             const encodedContent = btoa(fileContent);
             
             // Update file on GitHub
