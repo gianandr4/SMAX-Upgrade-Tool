@@ -11,7 +11,7 @@ config:
   image_secret_name: regcred
 ---
 
-# CLIENT D - SMAX Upgrade 24.4
+# Client A Upgrade to v24.4
 
 ## Preparation
 
@@ -59,7 +59,7 @@ pg_dump -h {{nfs_server}} -U postgres bo_db > smax_backup_$(date +%Y%m%d).sql
 
 ## Upgrade
 
-### Apply Suite Upgrade
+#### Apply Suite Upgrade
 
 This triggers the actual version change in OMT.
 

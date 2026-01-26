@@ -12,9 +12,11 @@ config:
   backup_location: /mnt/backup
 ---
 
-# CLIENT E - SMAX Upgrade 24.4
+# Client E Upgrade to v24.4
 
-## Pre-Upgrade Planning
+## Pre-Flight Checks
+
+### Review Release Notes
 
 ### Review Release Notes
 
@@ -64,9 +66,7 @@ Upload images to the private registry.
 
 ---
 
-## Pre-Upgrade Backup
-
-### Backup PostgreSQL Databases
+### Check System Resources
 
 Create full backups of all SMAX databases.
 
@@ -125,7 +125,7 @@ df -h
 
 ---
 
-### Check Resource Utilization
+### Backup Current Configuration
 
 Review current CPU and memory utilization.
 
@@ -144,9 +144,9 @@ Current resource usage looks good:
 
 ---
 
-## Registry Configuration
+## Environment Preparation
 
-### Create Docker Registry Secret
+### Create Registry Secret
 
 Create secret for pulling images.
 
@@ -162,7 +162,7 @@ kubectl create secret docker-registry <image_secret_name> \
 
 ---
 
-### Verify Registry Access
+### Download Upgrade Package
 
 Test registry connectivity.
 
@@ -177,7 +177,7 @@ kubectl delete pod test-registry -n {{namespace}}
 
 ## Upgrade Execution
 
-### Place in Maintenance Mode
+### Enable Maintenance Mode
 
 Enable maintenance mode to prevent user access.
 
@@ -190,7 +190,7 @@ Maintenance page displayed to users
 
 ---
 
-### Apply SMAX Upgrade
+### Execute Upgrade Script
 
 Execute the main upgrade process.
 
@@ -202,7 +202,7 @@ Execute the main upgrade process.
 
 ---
 
-### Monitor Upgrade Progress
+### Monitor Pod Status
 
 Monitor the upgrade and watch for errors.
 
@@ -223,7 +223,7 @@ Upgrade progress tracking:
 
 ## Post-Upgrade Validation
 
-### Verify SMAX Version
+### Verify Version
 
 Confirm all components are running version 24.4.
 
@@ -235,7 +235,7 @@ kubectl get pods -n {{namespace}} -o jsonpath='{range .items[*]}{.metadata.name}
 
 ---
 
-### Check All Pods Status
+### Health Check
 
 Ensure all pods are running.
 
@@ -247,15 +247,7 @@ kubectl get pods -n {{namespace}}
 
 ---
 
-### Disable Maintenance Mode
-
-Disable maintenance mode to allow user access.
-
-- [ ] Step not completed
-
----
-
-## Functional Testing
+### Functional Testing
 
 ### Test User Authentication
 
@@ -346,7 +338,7 @@ Email sent to all stakeholders
 
 ---
 
-### Update Documentation
+### Disable Maintenance Mode
 
 Update internal documentation with new version info.
 
