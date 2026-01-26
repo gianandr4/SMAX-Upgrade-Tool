@@ -226,17 +226,6 @@ let GITHUB_TOKEN = "";
         }
     }
 
-    // HTML escape function to prevent XSS
-    function escapeHtml(unsafe) {
-        if (!unsafe) return '';
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
     // Render environment variables
     function renderVars() {
         const varInputs = document.getElementById('var-inputs');
@@ -297,6 +286,7 @@ let GITHUB_TOKEN = "";
         document.body.appendChild(textarea);
         textarea.select();
         try {
+            // Note: execCommand is deprecated but kept as fallback for legacy browser support
             document.execCommand('copy');
             console.log('[SMAX Tool] Copied using fallback method');
         } catch (err) {
