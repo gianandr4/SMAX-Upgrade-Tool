@@ -96,7 +96,7 @@ Confirm the upgrade was successful.
 kubectl get pods -n {{namespace}} -o jsonpath='{.items[0].spec.containers[0].image}'
 ```
 
-- [ ] Step not completed
+- [x] Step completed
 
 ---
 
@@ -106,7 +106,7 @@ Test basic functionality: login, create ticket, check reports.
 ---
 ---
 
-- [ ] Step not completed
+- [x] Step completed
 
 ---
 
@@ -116,7 +116,7 @@ Test basic functionality: login, create ticket, check reports.
 ---
 ---
 
-- [ ] Step not completed
+- [x] Step completed
 
 ---
 
