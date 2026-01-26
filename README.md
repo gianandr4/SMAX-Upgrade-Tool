@@ -130,6 +130,15 @@ kubectl create secret docker-registry <image_secret_name> \
 
 Both formats are replaced with actual values from the `config` section.
 
+## Creating a New Client
+
+1. Copy `template.md` to `24.4/client-new.md` (or appropriate version folder)
+2. Update the YAML front-matter with client-specific configuration
+3. Update the H1 title with client name and version
+4. Customize stages and steps as needed
+5. Commit and push to repository
+6. Refresh the tool and select the new client
+
 ## Screenshots
 
 ### Light Mode
@@ -183,3 +192,24 @@ Contributions welcome! The tool uses a simple, maintainable architecture:
 
 MIT License - See LICENSE file for details
 
+## GitHub Token Permissions
+
+Required permissions for GitHub Personal Access Token:
+- `repo` (Full control of private repositories)
+
+## Security
+
+- Token is stored only in browser memory (not persisted)
+- All API calls use HTTPS
+- Markdown content is sanitized before rendering
+- XSS protection in place
+
+## Browser Support
+
+- Chrome/Edge (latest)
+- Firefox (latest)
+- Safari (latest)
+
+## License
+
+MIT License - See repository for details

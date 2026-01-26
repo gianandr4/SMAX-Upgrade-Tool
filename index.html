@@ -143,9 +143,8 @@
 <div class="controls">
     <input type="password" id="ghToken" placeholder="Paste GitHub Token" onchange="connect()">
     
-    <select id="selVer" onchange="loadData()">
-        <option value="24.1">Version 24.1</option>
-        <option value="24.2">Version 24.2</option>
+    <select id="selVer" onchange="onVersionChange()">
+        <option value="">Select version...</option>
     </select>
 
     <select id="selClient" onchange="loadData()">
@@ -363,14 +362,12 @@ let GITHUB_TOKEN = "";
             // Clear existing options
             clientSelect.innerHTML = "";
             
-            // Find all client files (both .yaml and .md, excluding state- and template files)
+            // Find all client markdown files (excluding README.md)
             const clientFiles = items.filter(item => 
                 item.type === 'file' && 
-                (item.name.endsWith('.yaml') || item.name.endsWith('.md')) &&
-                !item.name.startsWith('state-') &&
-                !item.name.startsWith('managed-') &&
-                !item.name.startsWith('embedded-') &&
-                item.name !== 'README.md'
+                item.name.endsWith('.md') &&
+                item.name !== 'README.md' &&
+                item.name !== 'template.md'
             );
             
             if (clientFiles.length === 0) {
@@ -381,15 +378,9 @@ let GITHUB_TOKEN = "";
             // Extract client names
             const clients = new Set();
             clientFiles.forEach(file => {
-                // Extract client name from filename (e.g., "client-A-managed-steps.yaml" -> "client-A")
-                const match = file.name.match(/^(.+?)-(?:managed|embedded)-steps\.yaml$/);
-                if (match) {
-                    clients.add(match[1]);
-                } else {
-                    // New format: just client name (e.g., "client-A.yaml" or "client-A.md")
-                    const clientName = file.name.replace(/\.(yaml|md)$/, '');
-                    clients.add(clientName);
-                }
+                // Extract client name from filename (e.g., "client-A.md")
+                const clientName = file.name.replace(/\.md$/, '');
+                clients.add(clientName);
             });
             
             clients.forEach(client => {
@@ -633,6 +624,15 @@ let GITHUB_TOKEN = "";
         }
     }
 
+    // NEW: Handle version change - refresh client list
+    async function onVersionChange() {
+        const ver = document.getElementById('selVer').value;
+        if (!ver) return;
+        
+        await fetchClients(ver);
+        // Don't auto-load data, wait for user to select a client
+    }
+    
     async function loadData() {
         showError(""); 
         const ver = document.getElementById('selVer').value;

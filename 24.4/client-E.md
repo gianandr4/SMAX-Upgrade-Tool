@@ -3,10 +3,13 @@ config:
   namespace: itsma-cliente
   ESM_NAMESPACE: itsma-cliente
   version: '24.4'
-  registry_server: harbor.example.com
-  username: sysadmin
-  password: SecurePass123
-  image_secret_name: harbor-secret
+  registry: registry.example.com
+  registry_server: registry.example.com
+  nfs_server: nfs.internal.com
+  username: admin
+  password: changeme
+  image_secret_name: regcred
+  backup_location: /mnt/backup
 ---
 
 # Client E Upgrade to v24.4
@@ -15,51 +18,129 @@ config:
 
 ### Review Release Notes
 
-Read the 24.4 release notes and understand new features and breaking changes.
+### Review Release Notes
 
-- [x] Step completed
+Review the official SMAX release notes to understand new features and changes.
+
+- [ ] Step not completed
+
+---
+
+### Schedule Maintenance Window
+
+Coordinate with stakeholders to schedule an appropriate maintenance window.
+
+- [ ] Step not completed
 
 **Personal Notes:**
-# Key Points from Release Notes
+- Proposed window: Saturday, 2:00 AM - 6:00 AM
+- Stakeholders notified via email
+- Change ticket: CHG00012345
 
-✅ **New Features:**
-- Enhanced API performance (30% faster)
-- New dashboard widgets for analytics
-- Improved mobile responsiveness
+---
 
-⚠️ **Breaking Changes:**
-- Legacy API endpoints deprecated
-- New authentication flow required
+## Binaries Download
 
-📋 **Action Items:**
-- Update API client libraries
-- Test mobile app compatibility
+### Download SMAX Binaries
+
+Download the SMAX 24.4 installation binaries.
+
+```bash
+wget https://downloads.microfocus.com/smax/24.4/smax-24.4.tar.gz
+tar -xzf smax-24.4.tar.gz
+```
+
+- [ ] Step not completed
+
+---
+
+### Upload to Registry
+
+Upload images to the private registry.
+
+```bash
+./upload-images.sh -r {{registry_server}} -u {{username}} -p {{password}}
+```
+
+- [ ] Step not completed
 
 ---
 
 ### Check System Resources
 
-Verify adequate CPU, memory, and storage for upgrade.
+Create full backups of all SMAX databases.
 
 ```bash
-kubectl top nodes
+pg_dump -h {{nfs_server}} -U postgres bo_db > {{backup_location}}/smax_backup_$(date +%Y%m%d).sql
+```
+
+- [ ] Step not completed
+
+**Personal Notes:**
+Backup completed successfully
+- BoB database: 2.3 GB
+- SmartAnalytics database: 1.8 GB
+- IdM database: 450 MB
+- Total backup size: 4.5 GB
+- Backup location verified and accessible
+
+---
+
+### Backup Kubernetes Configurations
+
+Export all Kubernetes configurations.
+
+```bash
+kubectl get all -n {{namespace}} -o yaml > {{backup_location}}/k8s-backup-$(date +%Y%m%d).yaml
+```
+
+- [ ] Step not completed
+
+---
+
+## Pre-Upgrade Validation
+
+### SMAX Health Check
+
+Ensure all pods are running before starting.
+
+```bash
+kubectl get pods -n {{namespace}}
+```
+
+- [ ] Step not completed
+
+---
+
+### Verify Storage
+
+Ensure sufficient storage is available.
+
+```bash
+kubectl get pvc -n {{namespace}}
 df -h
 ```
 
-- [x] Step completed
+- [ ] Step not completed
 
 ---
 
 ### Backup Current Configuration
 
-Export all ConfigMaps and Secrets.
+Review current CPU and memory utilization.
 
 ```bash
-kubectl get configmaps -n {{namespace}} -o yaml > backup-configmaps.yaml
-kubectl get secrets -n {{namespace}} -o yaml > backup-secrets.yaml
+kubectl top nodes
+kubectl top pods -n {{namespace}}
 ```
 
 - [ ] Step not completed
+
+**Personal Notes:**
+Current resource usage looks good:
+- CPU utilization: 45% average across nodes
+- Memory utilization: 62% average
+- Sufficient capacity for upgrade
 
 ---
 
@@ -67,7 +148,7 @@ kubectl get secrets -n {{namespace}} -o yaml > backup-secrets.yaml
 
 ### Create Registry Secret
 
-Setup authentication for private Docker registry.
+Create secret for pulling images.
 
 ```bash
 kubectl create secret docker-registry <image_secret_name> \
@@ -83,12 +164,11 @@ kubectl create secret docker-registry <image_secret_name> \
 
 ### Download Upgrade Package
 
-Pull the upgrade images to local registry.
+Test registry connectivity.
 
 ```bash
-docker pull <registry_server>/smax/suite:{{version}}
-docker pull <registry_server>/smax/idm:{{version}}
-docker pull <registry_server>/smax/autopass:{{version}}
+kubectl run test-registry --image=<registry_server>/smax/sample:24.4 -n {{namespace}}
+kubectl delete pod test-registry -n {{namespace}}
 ```
 
 - [ ] Step not completed
@@ -99,29 +179,23 @@ docker pull <registry_server>/smax/autopass:{{version}}
 
 ### Enable Maintenance Mode
 
-Put SMAX in maintenance mode to prevent user access during upgrade.
+Enable maintenance mode to prevent user access.
 
 - [ ] Step not completed
 
 **Personal Notes:**
-**Maintenance Window:** 
-- Start: Saturday, January 20, 2024 - 2:00 AM EST
-- Duration: 3-4 hours
-- End: Saturday, January 20, 2024 - 6:00 AM EST
-
-**Communication:**
-- Notification sent to all users via email
-- Status page updated
-- On-call team notified
+Maintenance page displayed to users
+- Message: "System upgrade in progress"
+- Estimated completion: 4 hours
 
 ---
 
 ### Execute Upgrade Script
 
-Run the automated upgrade process.
+Execute the main upgrade process.
 
 ```bash
-./upgrade.sh -n {{namespace}} -v {{version}} -r <registry_server>
+./upgrade.sh -n {{namespace}} -v {{version}}
 ```
 
 - [ ] Step not completed
@@ -130,14 +204,20 @@ Run the automated upgrade process.
 
 ### Monitor Pod Status
 
-Watch all pods restart and achieve ready state.
+Monitor the upgrade and watch for errors.
 
 ```bash
-kubectl get pods -n <ESM_NAMESPACE> -w
-kubectl wait --for=condition=Ready pods --all -n {{namespace}} --timeout=30m
+kubectl get pods -n {{namespace}} -w
 ```
 
 - [ ] Step not completed
+
+**Personal Notes:**
+Upgrade progress tracking:
+- Start time: 02:15 AM
+- Database migration: Completed at 02:45 AM
+- Pod restarts: Completed at 03:30 AM
+- Total duration: 1 hour 15 minutes
 
 ---
 
@@ -145,10 +225,10 @@ kubectl wait --for=condition=Ready pods --all -n {{namespace}} --timeout=30m
 
 ### Verify Version
 
-Check that all components are running the new version.
+Confirm all components are running version 24.4.
 
 ```bash
-kubectl get deployments -n {{namespace}} -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'
+kubectl get pods -n {{namespace}} -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\n"}{end}'
 ```
 
 - [ ] Step not completed
@@ -157,11 +237,10 @@ kubectl get deployments -n {{namespace}} -o jsonpath='{range .items[*]}{.metadat
 
 ### Health Check
 
-Verify all services are healthy and responding.
+Ensure all pods are running.
 
 ```bash
-kubectl get pods -n <ESM_NAMESPACE>
-curl -k https://smax.example.com/health
+kubectl get pods -n {{namespace}}
 ```
 
 - [ ] Step not completed
@@ -170,39 +249,98 @@ curl -k https://smax.example.com/health
 
 ### Functional Testing
 
-Test core application functionality.
+### Test User Authentication
+
+Verify login functionality.
 
 - [ ] Step not completed
 
 **Personal Notes:**
-### Smoke Test Checklist
+Tested authentication methods:
+- ✓ Local users: Working
+- ✓ LDAP authentication: Working
+- ✓ SSO: Working
 
-**Authentication:**
-- [ ] Login with admin user
-- [ ] Login with regular user
-- [ ] SSO integration working
+---
 
-**Core Functions:**
-- [ ] Create incident ticket
-- [ ] Assign ticket to agent
-- [ ] Add comments/attachments
-- [ ] Close ticket
+### Create Test Incident
 
-**Integrations:**
-- [ ] Email notifications working
-- [ ] LDAP sync functional
-- [ ] API endpoints responding
+Create a test incident to verify ITSM functionality.
 
-**Reports:**
-- [ ] Dashboard loads correctly
-- [ ] Standard reports generate
-- [ ] Custom reports functional
+- [ ] Step not completed
+
+---
+
+### Test Notifications
+
+Verify email notifications are working.
+
+- [ ] Step not completed
+
+---
+
+### Test Service Portal
+
+Access the Service Portal and verify all widgets load.
+
+- [ ] Step not completed
+
+---
+
+### Test Reporting
+
+Run sample reports.
+
+- [ ] Step not completed
+
+---
+
+## Post-Upgrade Optimization
+
+### Review Resource Utilization
+
+Monitor resource usage post-upgrade.
+
+```bash
+kubectl top pods -n {{namespace}}
+```
+
+- [ ] Step not completed
+
+---
+
+### Optimize Database
+
+Run database maintenance tasks.
+
+```bash
+psql -h {{nfs_server}} -U postgres -d bo_db -c "VACUUM ANALYZE;"
+```
+
+- [ ] Step not completed
+
+---
+
+## Finalization
+
+### Notify Stakeholders
+
+Inform stakeholders of successful upgrade completion.
+
+- [ ] Step not completed
+
+**Personal Notes:**
+Email sent to all stakeholders
+- Upgrade completed successfully
+- All systems operational
+- No issues reported during testing
+- Change ticket closed
 
 ---
 
 ### Disable Maintenance Mode
 
-Return SMAX to normal operation.
+Update internal documentation with new version info.
 
 - [ ] Step not completed
 
