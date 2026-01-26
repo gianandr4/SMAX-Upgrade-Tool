@@ -32,11 +32,6 @@ Coordinate with stakeholders to schedule an appropriate maintenance window.
 
 - [ ] Step not completed
 
-**Personal Notes:**
-- Proposed window: Saturday, 2:00 AM - 6:00 AM
-- Stakeholders notified via email
-- Change ticket: CHG00012345
-
 ---
 
 ## Binaries Download
@@ -75,14 +70,6 @@ pg_dump -h {{nfs_server}} -U postgres bo_db > {{backup_location}}/smax_backup_$(
 ```
 
 - [ ] Step not completed
-
-**Personal Notes:**
-Backup completed successfully
-- BoB database: 2.3 GB
-- SmartAnalytics database: 1.8 GB
-- IdM database: 450 MB
-- Total backup size: 4.5 GB
-- Backup location verified and accessible
 
 ---
 
@@ -136,12 +123,6 @@ kubectl top pods -n {{namespace}}
 
 - [ ] Step not completed
 
-**Personal Notes:**
-Current resource usage looks good:
-- CPU utilization: 45% average across nodes
-- Memory utilization: 62% average
-- Sufficient capacity for upgrade
-
 ---
 
 ## Environment Preparation
@@ -183,11 +164,6 @@ Enable maintenance mode to prevent user access.
 
 - [ ] Step not completed
 
-**Personal Notes:**
-Maintenance page displayed to users
-- Message: "System upgrade in progress"
-- Estimated completion: 4 hours
-
 ---
 
 ### Execute Upgrade Script
@@ -211,13 +187,6 @@ kubectl get pods -n {{namespace}} -w
 ```
 
 - [ ] Step not completed
-
-**Personal Notes:**
-Upgrade progress tracking:
-- Start time: 02:15 AM
-- Database migration: Completed at 02:45 AM
-- Pod restarts: Completed at 03:30 AM
-- Total duration: 1 hour 15 minutes
 
 ---
 
@@ -254,12 +223,6 @@ kubectl get pods -n {{namespace}}
 Verify login functionality.
 
 - [ ] Step not completed
-
-**Personal Notes:**
-Tested authentication methods:
-- ✓ Local users: Working
-- ✓ LDAP authentication: Working
-- ✓ SSO: Working
 
 ---
 
@@ -328,13 +291,6 @@ psql -h {{nfs_server}} -U postgres -d bo_db -c "VACUUM ANALYZE;"
 Inform stakeholders of successful upgrade completion.
 
 - [ ] Step not completed
-
-**Personal Notes:**
-Email sent to all stakeholders
-- Upgrade completed successfully
-- All systems operational
-- No issues reported during testing
-- Change ticket closed
 
 ---
 

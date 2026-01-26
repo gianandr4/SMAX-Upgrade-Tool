@@ -18,13 +18,7 @@ config:
 ### SMAX Health Check
 
 Ensure all pods are in 2/2 or 1/1 Running state before starting.
----
----
----
-**Personal Notes:**
-![image.png](https://raw.githubusercontent.com/gianandr4/SMAX-Upgrade-Tool/main/24.4/images/1769447437446-image.png)
----
----
+
 
 ```bash
 kubectl get pods -n {{namespace}}
@@ -33,8 +27,10 @@ kubectl get pods -n {{namespace}}
 - [x] Step completed
 
 #### Notes
-
+##### Current
 asda
+##### 24.4
+some note
 
 ---
 
@@ -44,8 +40,6 @@ Create secret for pulling images from private registry.
 ---
 ---
 ---
-**Personal Notes:**
-Remember to verify the secret was created:
 ---
 ---
 ---

@@ -560,8 +560,11 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         let currentStep = null;
         let collectingCommand = false;
         let collectingNotes = false;
+        let collectingSubsection = false;
         let commandBuffer = [];
         let notesBuffer = [];
+        let subsectionBuffer = [];
+        let currentSubsection = '';
         let rawBuffer = [];
         
         for (let i = 0; i < lines.length; i++) {
@@ -590,6 +593,7 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 currentStep = null;
                 collectingCommand = false;
                 collectingNotes = false;
+                collectingSubsection = false;
                 rawBuffer = [];
                 continue;
             }
@@ -608,12 +612,15 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                     notes: '',
                     command: '',
                     done: false,
-                    userNotes: ''
+                    userNotes: {} // Changed from string to object
                 };
                 collectingCommand = false;
                 collectingNotes = false;
+                collectingSubsection = false;
                 commandBuffer = [];
                 notesBuffer = [];
+                subsectionBuffer = [];
+                currentSubsection = '';
                 rawBuffer = [line]; // Start collecting raw for this step
                 continue;
             }
@@ -666,7 +673,22 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 if (sectionTitle.toLowerCase().includes('notes') || sectionTitle.toLowerCase().includes('note')) {
                     collectingNotes = true;
                     notesBuffer = [];
+                    collectingSubsection = false;
+                    currentSubsection = '';
                 }
+                continue;
+            }
+            
+            // H5 = Subsection within notes
+            if (collectingNotes && line.startsWith('##### ')) {
+                // Save previous subsection if any
+                if (currentSubsection && subsectionBuffer.length > 0) {
+                    currentStep.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
+                }
+                // Start new subsection
+                currentSubsection = line.substring(6).trim();
+                subsectionBuffer = [];
+                collectingSubsection = true;
                 continue;
             }
             
@@ -674,11 +696,23 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             if (collectingNotes && currentStep) {
                 // Check if we've reached the next H3, H2, or H1 (end of notes section)
                 if (line.startsWith('### ') || line.startsWith('## ') || line.startsWith('# ')) {
-                    currentStep.userNotes = notesBuffer.join('\n').trim();
+                    // Save any remaining subsection
+                    if (currentSubsection && subsectionBuffer.length > 0) {
+                        currentStep.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
+                    }
                     collectingNotes = false;
+                    collectingSubsection = false;
                     // Don't continue here - let the header be processed normally
+                } else if (collectingSubsection) {
+                    subsectionBuffer.push(line);
+                    continue;
                 } else {
-                    notesBuffer.push(line);
+                    // Content before first subsection goes to a default section
+                    if (!currentSubsection) {
+                        currentSubsection = 'Current';
+                        collectingSubsection = true;
+                        subsectionBuffer = [line];
+                    }
                     continue;
                 }
             }
@@ -695,8 +729,11 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         
         // Add last step and stage
         if (currentStep && currentStage) {
-            if (collectingNotes && notesBuffer.length > 0) {
-                currentStep.userNotes = notesBuffer.join('\n').trim();
+            if (collectingNotes) {
+                // Save any remaining subsection
+                if (currentSubsection && subsectionBuffer.length > 0) {
+                    currentStep.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
+                }
             }
             currentStep.rawMd = rawBuffer.join('\n');
             currentStage.steps.push(currentStep);
@@ -1267,9 +1304,9 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             
             // Minimal notes button
             const notesBtn = document.createElement('button');
-            notesBtn.className = `note-toggle-btn ${step.userNotes ? 'has-notes' : ''}`;
-            notesBtn.innerHTML = step.userNotes ? '💬 Notes' : '💬';
-            notesBtn.title = step.userNotes ? 'View/Edit notes' : 'Add notes';
+            notesBtn.className = `note-toggle-btn ${step.userNotes && Object.keys(step.userNotes).length > 0 ? 'has-notes' : ''}`;
+            notesBtn.innerHTML = step.userNotes && Object.keys(step.userNotes).length > 0 ? '💬 Notes' : '💬';
+            notesBtn.title = step.userNotes && Object.keys(step.userNotes).length > 0 ? 'View/Edit notes' : 'Add notes';
             notesBtn.onclick = () => toggleNoteEditor(currentStageIndex, stepIndex);
             
             rightSection.appendChild(editBtn);
@@ -1334,8 +1371,9 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             notePreview.className = 'note-preview';
             notePreview.id = `note-preview_${currentStageIndex}_${stepIndex}`;
             notePreview.style.marginBottom = '10px';
-            if (step.userNotes) {
-                notePreview.innerHTML = marked.parse(step.userNotes);
+            if (step.userNotes && Object.keys(step.userNotes).length > 0) {
+                const notesMd = userNotesToMarkdown(step.userNotes);
+                notePreview.innerHTML = marked.parse(notesMd);
             } else {
                 notePreview.innerHTML = '<span style="color: #586069; font-style: italic;">No notes yet. Click Edit to add some.</span>';
             }
@@ -1345,8 +1383,8 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             noteTextarea.id = `note-textarea_${currentStageIndex}_${stepIndex}`;
             noteTextarea.disabled = false;
             noteTextarea.readOnly = false;
-            noteTextarea.value = step.userNotes || '';
-            noteTextarea.placeholder = 'Enter notes in Markdown format...\n\nYou can:\n- Paste images directly (Ctrl+V)\n- Drag and drop images\n- Use **bold**, *italic*, lists, etc.';
+            noteTextarea.value = step.userNotes && Object.keys(step.userNotes).length > 0 ? userNotesToMarkdown(step.userNotes) : '';
+            noteTextarea.placeholder = 'Enter notes in Markdown format...\n\nUse #### Notes to start the notes section\nUse ##### SubsectionName for subsections\n\nExample:\n#### Notes\n\n##### Current\n\nMy current notes here\n\n##### 24.4\n\nNotes from version 24.4\n\nYou can:\n- Paste images directly (Ctrl+V)\n- Drag and drop images\n- Use **bold**, *italic*, lists, etc.';
             noteTextarea.rows = 6;
             noteTextarea.style.marginBottom = '10px';
             noteTextarea.style.display = 'none';
@@ -1461,12 +1499,14 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         const textarea = document.getElementById(`note-textarea_${stageIndex}_${stepIndex}`);
         const preview = document.getElementById(`note-preview_${stageIndex}_${stepIndex}`);
         
-        config.stages[stageIndex].steps[stepIndex].userNotes = textarea.value;
+        // Parse the markdown back into structured userNotes object
+        config.stages[stageIndex].steps[stepIndex].userNotes = markdownToUserNotes(textarea.value);
         
         // Update preview and switch back to preview mode
         if (preview) {
-            if (textarea.value) {
-                preview.innerHTML = marked.parse(textarea.value);
+            if (Object.keys(config.stages[stageIndex].steps[stepIndex].userNotes).length > 0) {
+                const notesMd = userNotesToMarkdown(config.stages[stageIndex].steps[stepIndex].userNotes);
+                preview.innerHTML = marked.parse(notesMd);
             } else {
                 preview.innerHTML = '<span style="color: #586069; font-style: italic;">No notes yet. Click Edit to add some.</span>';
             }
@@ -1694,9 +1734,8 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 // Checkbox for completion status
                 md += step.done ? '- [x] Step completed\n' : '- [ ] Step not completed\n';
                 
-                if (step.userNotes) {
-                    md += '\n#### Notes\n\n';
-                    md += step.userNotes + '\n';
+                if (step.userNotes && Object.keys(step.userNotes).length > 0) {
+                    md += '\n' + userNotesToMarkdown(step.userNotes) + '\n';
                 }
                 
                 md += '\n---\n\n';
@@ -1934,62 +1973,62 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         if (step.command) {
             md += `\`\`\`\n${step.command}\n\`\`\`\n\n`;
         }
-        if (step.userNotes) {
-            md += `#### Notes\n\n${step.userNotes}\n\n`;
+        if (step.userNotes && Object.keys(step.userNotes).length > 0) {
+            md += `#### Notes\n\n`;
+            for (const [subsection, content] of Object.entries(step.userNotes)) {
+                md += `##### ${subsection}\n\n${content}\n\n`;
+            }
         }
         return md.trim();
     }
     
-    // Convert Markdown string back to step object
-    function markdownToStep(md) {
-        const lines = md.split('\n');
-        const step = { done: false, notes: '', command: '', userNotes: '' };
-        let inCodeBlock = false;
-        let codeBuffer = [];
-        let notesBuffer = [];
-        let collectingNotes = false;
+    // Helper function to convert userNotes object to markdown string
+    function userNotesToMarkdown(userNotes) {
+        if (!userNotes || Object.keys(userNotes).length === 0) return '';
         
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
+        let md = '#### Notes\n\n';
+        for (const [subsection, content] of Object.entries(userNotes)) {
+            md += `##### ${subsection}\n\n${content}\n\n`;
+        }
+        return md.trim();
+    }
+    
+    // Helper function to convert markdown string to userNotes object
+    function markdownToUserNotes(md) {
+        if (!md) return {};
+        
+        const lines = md.split('\n');
+        const userNotes = {};
+        let currentSubsection = '';
+        let subsectionBuffer = [];
+        let inNotesSection = false;
+        
+        for (const line of lines) {
+            if (line.startsWith('#### ')) {
+                inNotesSection = true;
+                continue;
+            }
+            if (!inNotesSection) continue;
             
-            if (line.startsWith('### ')) {
-                step.title = line.substring(4).trim();
-                step.id = step.title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-            } else if (line.trim() === '- [x]' || line.trim() === '- [X]') {
-                step.done = true;
-            } else if (line.trim() === '- [ ]') {
-                step.done = false;
-            } else if (line.trim() === '```') {
-                if (inCodeBlock) {
-                    step.command = codeBuffer.join('\n').trim();
-                    inCodeBlock = false;
-                    codeBuffer = [];
-                } else {
-                    inCodeBlock = true;
+            if (line.startsWith('##### ')) {
+                // Save previous subsection
+                if (currentSubsection && subsectionBuffer.length > 0) {
+                    userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
                 }
-            } else if (inCodeBlock) {
-                codeBuffer.push(line);
-            } else if (line.trim().startsWith('**Personal Notes:**')) {
-                collectingNotes = true;
-                notesBuffer = [];
-            } else if (collectingNotes) {
-                if (line.trim() !== '') {
-                    notesBuffer.push(line);
-                }
-            } else if (line.trim() !== '') {
-                if (step.notes) {
-                    step.notes += '\n' + line.trim();
-                } else {
-                    step.notes = line.trim();
-                }
+                // Start new subsection
+                currentSubsection = line.substring(6).trim();
+                subsectionBuffer = [];
+            } else if (currentSubsection && line.trim() !== '') {
+                subsectionBuffer.push(line);
             }
         }
         
-        if (notesBuffer.length > 0) {
-            step.userNotes = notesBuffer.join('\n').trim();
+        // Save final subsection
+        if (currentSubsection && subsectionBuffer.length > 0) {
+            userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
         }
         
-        return step;
+        return userNotes;
     }
     
     // Handle Markdown keyboard shortcuts
@@ -2183,9 +2222,15 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             // Archive current notes under #### history in each step
             config.stages.forEach(stage => {
                 stage.steps.forEach(step => {
-                    if (step.userNotes) {
-                        const historyEntry = `\n\n---\n\n**📚 Previous Version Notes (v${currentVersion} - ${new Date().toISOString().split('T')[0]})**\n\n${step.userNotes}`;
-                        step.userNotes = historyEntry;
+                    if (step.userNotes && Object.keys(step.userNotes).length > 0) {
+                        const currentVersion = document.getElementById('selVer').value;
+                        const historyEntry = `\n\n---\n\n**📚 Previous Version Notes (v${currentVersion} - ${new Date().toISOString().split('T')[0]})**\n\n${userNotesToMarkdown(step.userNotes)}`;
+                        
+                        // Initialize or update the history subsection
+                        if (!step.userNotes[currentVersion]) {
+                            step.userNotes[currentVersion] = '';
+                        }
+                        step.userNotes[currentVersion] += historyEntry;
                     }
                     // Reset done status
                     step.done = false;
