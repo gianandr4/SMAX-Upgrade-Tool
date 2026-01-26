@@ -660,25 +660,27 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 continue;
             }
             
-            // Personal notes marker
-            if (line.trim().startsWith('**Personal Notes:**') || 
-                line.trim().startsWith('**Notes:**') ||
-                line.trim().startsWith('**User Notes:**')) {
-                collectingNotes = true;
-                notesBuffer = [];
+            // H4 = Notes section
+            if (line.startsWith('#### ')) {
+                const sectionTitle = line.substring(5).trim();
+                if (sectionTitle.toLowerCase().includes('notes') || sectionTitle.toLowerCase().includes('note')) {
+                    collectingNotes = true;
+                    notesBuffer = [];
+                }
                 continue;
             }
             
-            // Collect notes
+            // Collect notes content
             if (collectingNotes && currentStep) {
-                if (line.trim() === '' && notesBuffer.length > 0) {
-                    // Empty line after notes might end the notes section
+                // Check if we've reached the next H3, H2, or H1 (end of notes section)
+                if (line.startsWith('### ') || line.startsWith('## ') || line.startsWith('# ')) {
                     currentStep.userNotes = notesBuffer.join('\n').trim();
                     collectingNotes = false;
-                } else if (line.trim() !== '') {
+                    // Don't continue here - let the header be processed normally
+                } else {
                     notesBuffer.push(line);
+                    continue;
                 }
-                continue;
             }
             
             // Regular content (step description/notes)
@@ -1693,7 +1695,7 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 md += step.done ? '- [x] Step completed\n' : '- [ ] Step not completed\n';
                 
                 if (step.userNotes) {
-                    md += '\n**Personal Notes:**\n';
+                    md += '\n#### Notes\n\n';
                     md += step.userNotes + '\n';
                 }
                 
@@ -1933,7 +1935,7 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             md += `\`\`\`\n${step.command}\n\`\`\`\n\n`;
         }
         if (step.userNotes) {
-            md += `**Personal Notes:**\n\n${step.userNotes}\n\n`;
+            md += `#### Notes\n\n${step.userNotes}\n\n`;
         }
         return md.trim();
     }
@@ -2182,7 +2184,7 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             config.stages.forEach(stage => {
                 stage.steps.forEach(step => {
                     if (step.userNotes) {
-                        const historyEntry = `\n\n#### History (from v${currentVersion} - ${new Date().toISOString().split('T')[0]})\n${step.userNotes}`;
+                        const historyEntry = `\n\n---\n\n**📚 Previous Version Notes (v${currentVersion} - ${new Date().toISOString().split('T')[0]})**\n\n${step.userNotes}`;
                         step.userNotes = historyEntry;
                     }
                     // Reset done status
