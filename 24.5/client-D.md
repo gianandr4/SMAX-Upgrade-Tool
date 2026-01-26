@@ -30,7 +30,7 @@ kubectl get pods -n {{namespace}}
 - [x] Step completed
 
 **Personal Notes:**
-#### History (from v24.4 - 2026-01-26)asda
+#### History (from v24.4 - 2026-01-26)
 ![image.png](https://raw.githubusercontent.com/gianandr4/SMAX-Upgrade-Tool/main/24.4/images/1769447437446-image.png)
 
 ---
