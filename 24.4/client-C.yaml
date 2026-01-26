@@ -1,0 +1,53 @@
+config:
+  namespace: "itsma-clientc"
+  ESM_NAMESPACE: "itsma-clientc"
+  version: "24.4"
+  registry: "harbor.clientc.local"
+  registry_server: "harbor.clientc.local"
+  nfs_server: "nfs01.clientc.local"
+  username: "dockeruser"
+  password: "SecureP@ss123"
+  image_secret_name: "harbor-creds"
+  backup_path: "/mnt/backups/clientc"
+
+stages:
+  - name: "Preparation"
+    steps:
+      - id: "review_docs"
+        title: "Review Upgrade Documentation"
+        notes: "Read release notes and upgrade guide."
+        command: ""
+        done: true
+        userNotes: "# Review Notes\n\n✅ Read 24.4 release notes\n✅ Reviewed breaking changes\n✅ Noted new features:\n- Enhanced reporting\n- Improved API performance\n- New dashboard widgets"
+
+  - name: "Environment Setup"
+    steps:
+      - id: "create_secret"
+        title: "Create Registry Secret"
+        notes: "Setup Docker registry authentication."
+        command: "kubectl create secret docker-registry <image_secret_name> --docker-username=<username> --docker-password=<password> --docker-server=<registry_server> -n <ESM_NAMESPACE>"
+        done: false
+        userNotes: ""
+      
+      - id: "download_images"
+        title: "Pre-pull Upgrade Images"
+        notes: "Download images to local registry."
+        command: "docker pull {{registry}}/smax/suite:{{version}}"
+        done: false
+        userNotes: ""
+
+  - name: "Upgrade"
+    steps:
+      - id: "maintenance_mode"
+        title: "Enable Maintenance Mode"
+        notes: "Put SMAX in maintenance mode to prevent user access."
+        command: ""
+        done: false
+        userNotes: ""
+      
+      - id: "execute_upgrade"
+        title: "Execute Upgrade"
+        notes: "Run upgrade automation."
+        command: "./upgrade.sh -n {{namespace}} -v {{version}} -r <registry_server>"
+        done: false
+        userNotes: ""
