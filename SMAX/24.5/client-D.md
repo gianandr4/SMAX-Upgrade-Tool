@@ -11,7 +11,7 @@ config:
   image_secret_name: regcred
 ---
 
-# Client A Upgrade to v24.5
+# Client A Upgrade to v24.7
 
 ## Preparation
 
