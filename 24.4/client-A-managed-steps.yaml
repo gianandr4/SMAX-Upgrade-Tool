@@ -1,0 +1,21 @@
+config:
+  namespace: "itsma-xxx"
+  version: "24.1"
+  registry: "localhost:5000"
+  nfs_server: "nfs.internal.com"
+
+steps:
+  - id: "health_check"
+    title: "SMAX Health Check"
+    notes: "Ensure all pods are in 2/2 or 1/1 Running state before starting."
+    command: "kubectl get pods -n {{namespace}}"
+
+  - id: "backup_db"
+    title: "External DB Backup"
+    notes: "Backup BoB, SmartAnalytics, and IdM databases manually."
+    command: "pg_dump -h {{nfs_server}} -U postgres bo_db > smax_backup.sql"
+
+  - id: "apply_upgrade"
+    title: "Apply Suite Upgrade"
+    notes: "This triggers the actual version change in OMT."
+    command: "./upgrade.sh -n {{namespace}} -v {{version}}"

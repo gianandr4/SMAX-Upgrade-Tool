@@ -152,7 +152,9 @@ let GITHUB_TOKEN = "";
             return; // Wait until folders are loaded
         }
 
-        const yamlStepsPath = `${ver}/${type}`;
+        // Load client-specific steps file: e.g., "24.4/client-A-managed-steps.yaml"
+        const typeShort = type.replace('-steps.yaml', ''); // "managed" or "embedded"
+        const yamlStepsPath = `${ver}/${client}-${typeShort}-steps.yaml`;
         CURRENT_STATE_PATH = `${ver}/state-${client}.yaml`;
 
         try {
@@ -224,6 +226,17 @@ let GITHUB_TOKEN = "";
         }
     }
 
+    // HTML escape function to prevent XSS
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     // Render environment variables
     function renderVars() {
         const varInputs = document.getElementById('var-inputs');
@@ -234,12 +247,28 @@ let GITHUB_TOKEN = "";
         Object.entries(config.config).forEach(([key, defaultVal]) => {
             const stored = localStorage.getItem(`v_${key}`) || defaultVal;
             const wrapper = document.createElement('div');
-            wrapper.innerHTML = `
-                <label style="font-size:12px; color:#586069; display:block; margin-bottom:4px;">${key}</label>
-                <input type="text" id="var_${key}" value="${stored}" 
-                       onchange="localStorage.setItem('v_${key}', this.value)" 
-                       style="width:100%; box-sizing:border-box;">
-            `;
+            
+            // Create label
+            const label = document.createElement('label');
+            label.style.fontSize = '12px';
+            label.style.color = '#586069';
+            label.style.display = 'block';
+            label.style.marginBottom = '4px';
+            label.textContent = key;
+            
+            // Create input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = `var_${key}`;
+            input.value = stored;
+            input.style.width = '100%';
+            input.style.boxSizing = 'border-box';
+            input.onchange = function() {
+                localStorage.setItem(`v_${key}`, this.value);
+            };
+            
+            wrapper.appendChild(label);
+            wrapper.appendChild(input);
             varInputs.appendChild(wrapper);
         });
     }
@@ -304,25 +333,63 @@ let GITHUB_TOKEN = "";
             card.className = `card ${isDone ? 'step-done' : ''}`;
             card.id = `step_${step.id}`;
             
-            const checkboxHtml = `
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:12px;">
-                    <input type="checkbox" 
-                           id="check_${step.id}" 
-                           ${isDone ? 'checked' : ''} 
-                           onchange="toggleStep('${step.id}', this.checked)"
-                           style="width:18px; height:18px; cursor:pointer;">
-                    <strong style="font-size:16px;">${step.title || 'Untitled Step'}</strong>
-                </label>
-            `;
+            // Create checkbox label
+            const label = document.createElement('label');
+            label.style.display = 'flex';
+            label.style.alignItems = 'center';
+            label.style.gap = '8px';
+            label.style.cursor = 'pointer';
+            label.style.marginBottom = '12px';
             
-            const notesHtml = step.notes ? `<p style="color:#586069; margin:8px 0;">${step.notes}</p>` : '';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `check_${step.id}`;
+            checkbox.checked = isDone;
+            checkbox.style.width = '18px';
+            checkbox.style.height = '18px';
+            checkbox.style.cursor = 'pointer';
+            checkbox.onchange = function() {
+                toggleStep(step.id, this.checked);
+            };
             
-            const commandHtml = step.command ? `
-                <pre style="margin-top:12px; position:relative;">
-<button class="copy-btn" onclick="copyToClipboard(\`${interpolate(step.command).replace(/`/g, '\\`')}\`)">Copy</button>${interpolate(step.command)}</pre>
-            ` : '';
+            const title = document.createElement('strong');
+            title.style.fontSize = '16px';
+            title.textContent = step.title || 'Untitled Step';
             
-            card.innerHTML = checkboxHtml + notesHtml + commandHtml;
+            label.appendChild(checkbox);
+            label.appendChild(title);
+            card.appendChild(label);
+            
+            // Add notes if present
+            if (step.notes) {
+                const notes = document.createElement('p');
+                notes.style.color = '#586069';
+                notes.style.margin = '8px 0';
+                notes.textContent = step.notes;
+                card.appendChild(notes);
+            }
+            
+            // Add command with copy button if present
+            if (step.command) {
+                const interpolatedCommand = interpolate(step.command);
+                const pre = document.createElement('pre');
+                pre.style.marginTop = '12px';
+                pre.style.position = 'relative';
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = 'Copy';
+                copyBtn.onclick = function() {
+                    copyToClipboard(interpolatedCommand);
+                };
+                
+                const commandText = document.createTextNode(interpolatedCommand);
+                
+                pre.appendChild(copyBtn);
+                pre.appendChild(commandText);
+                card.appendChild(pre);
+            }
+            
             stepsList.appendChild(card);
         });
     }
@@ -339,6 +406,24 @@ let GITHUB_TOKEN = "";
             }
         }
         console.log(`[SMAX Tool] Step ${stepId} marked as ${checked ? 'done' : 'pending'}`);
+    }
+
+    // Show success message (non-blocking)
+    function showSuccess(msg) {
+        const box = document.getElementById('errorBox');
+        box.innerText = `✅ ${msg}`;
+        box.style.display = 'block';
+        box.style.background = '#d4edda';
+        box.style.color = '#155724';
+        box.style.borderColor = '#c3e6cb';
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            box.style.display = 'none';
+            box.style.background = '#ffeef0';
+            box.style.color = '#d73a49';
+            box.style.borderColor = '#f97583';
+        }, 3000);
     }
 
     // Save data function to push localStorage state back to GitHub
@@ -403,7 +488,7 @@ let GITHUB_TOKEN = "";
             document.getElementById('syncStat').innerText = `Synced: ${document.getElementById('selVer').value}/${document.getElementById('selClient').value}`;
             
             console.log('[SMAX Tool] State saved successfully');
-            alert('✅ Progress saved to GitHub!');
+            showSuccess('Progress saved to GitHub!');
             
         } catch (error) {
             console.error('[SMAX Tool] Save failed:', error);
