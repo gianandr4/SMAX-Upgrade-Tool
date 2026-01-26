@@ -59,6 +59,10 @@
         <option value="client-B">Client B</option>
         <option value="client-C">Client C</option>
     </select>
+
+    <button onclick="saveData()" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+        💾 Save Progress
+    </button>
 </div>
 
 <div class="container">
@@ -78,12 +82,17 @@ let GITHUB_TOKEN = "";
     let CURRENT_STATE_PATH = "";
     let config = { config: {}, steps: [] };
 
-    const pathParts = window.location.pathname.split('/').filter(p => p && p !== 'index.html');
-    const OWNER = window.location.hostname.split('.')[0];
-    const REPO = pathParts[0] || ""; 
+    // Hardcoded repository information for personal use
+    const OWNER = "gianandr4";
+    const REPO = "SMAX-Upgrade-Tool"; 
 
     async function connect() {
         GITHUB_TOKEN = document.getElementById('ghToken').value;
+        if (!GITHUB_TOKEN) {
+            showError('Please enter a GitHub token');
+            return;
+        }
+        console.log('[SMAX Tool] Connecting with GitHub token...');
         // Step 1: Dynamically find folders
         await fetchFolders();
         // Step 2: Load data for the first folder found
@@ -94,9 +103,16 @@ let GITHUB_TOKEN = "";
     async function fetchFolders() {
         if (!GITHUB_TOKEN) return;
         try {
+            console.log(`[SMAX Tool] Fetching folders from ${OWNER}/${REPO}...`);
             const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/`, {
                 headers: { Authorization: `token ${GITHUB_TOKEN}` }
             });
+            
+            if (!resp.ok) {
+                const errorData = await resp.json();
+                throw new Error(`GitHub API: ${errorData.message || resp.statusText}`);
+            }
+            
             const items = await resp.json();
             const folderSelect = document.getElementById('selVer');
             
@@ -106,14 +122,22 @@ let GITHUB_TOKEN = "";
             // Filter for directories that look like versions (numbers/dots)
             const folders = items.filter(item => item.type === 'dir' && !item.name.startsWith('.'));
             
+            if (folders.length === 0) {
+                showError('No version folders found in repository');
+                return;
+            }
+            
             folders.forEach(folder => {
                 const opt = document.createElement('option');
                 opt.value = folder.name;
                 opt.innerText = `Version ${folder.name}`;
                 folderSelect.appendChild(opt);
             });
+            
+            console.log(`[SMAX Tool] Found ${folders.length} version folder(s)`);
         } catch (e) {
-            showError("Failed to auto-detect folders. check your Token permissions.");
+            console.error('[SMAX Tool] fetchFolders error:', e);
+            showError(`Failed to load folders: ${e.message}`);
         }
     }
 
@@ -123,17 +147,28 @@ let GITHUB_TOKEN = "";
         const type = document.getElementById('selType').value;
         const client = document.getElementById('selClient').value;
         
-        if (!ver) return; // Wait until folders are loaded
+        if (!ver) {
+            console.log('[SMAX Tool] Waiting for version folders to load...');
+            return; // Wait until folders are loaded
+        }
 
         const yamlStepsPath = `${ver}/${type}`;
         CURRENT_STATE_PATH = `${ver}/state-${client}.yaml`;
 
         try {
+            console.log(`[SMAX Tool] Loading steps from ${yamlStepsPath}...`);
             const yResp = await fetch(yamlStepsPath);
-            if (!yResp.ok) throw new Error(`File not found: ${yamlStepsPath}`);
+            if (!yResp.ok) throw new Error(`Steps file not found: ${yamlStepsPath}`);
             config = jsyaml.load(await yResp.text());
+            
+            if (!config || !config.steps) {
+                throw new Error('Invalid YAML structure: missing steps array');
+            }
+            
+            console.log(`[SMAX Tool] Loaded ${config.steps.length} step(s)`);
 
             if (GITHUB_TOKEN) {
+                console.log(`[SMAX Tool] Loading state from ${CURRENT_STATE_PATH}...`);
                 const sResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${CURRENT_STATE_PATH}`, {
                     headers: { Authorization: `token ${GITHUB_TOKEN}` }
                 });
@@ -143,19 +178,236 @@ let GITHUB_TOKEN = "";
                     FILE_SHA = data.sha;
                     const state = jsyaml.load(atob(data.content)) || {};
                     
-                    Object.keys(localStorage).forEach(k => k.startsWith('s_') && localStorage.removeItem(k));
+                    // Clear old localStorage state
+                    Object.keys(localStorage).forEach(k => {
+                        if (k.startsWith('s_') || k.startsWith('v_')) {
+                            localStorage.removeItem(k);
+                        }
+                    });
+                    
+                    // Load new state
                     Object.entries(state).forEach(([k, v]) => localStorage.setItem(k, v));
                     
                     document.getElementById('syncInd').classList.add('online');
                     document.getElementById('syncStat').innerText = `Synced: ${ver}/${client}`;
+                    console.log('[SMAX Tool] State synced from GitHub');
+                } else if (sResp.status === 404) {
+                    console.warn('[SMAX Tool] State file not found, will create on first save');
+                    FILE_SHA = ""; // Will create new file on save
+                    document.getElementById('syncInd').classList.remove('online');
+                    document.getElementById('syncStat').innerText = `No saved state`;
                 } else {
-                    throw new Error(`State file missing: ${CURRENT_STATE_PATH}`);
+                    const errorData = await sResp.json();
+                    throw new Error(`Failed to load state: ${errorData.message || sResp.statusText}`);
                 }
+            } else {
+                console.log('[SMAX Tool] No token provided, working offline');
             }
+            
             renderVars();
             renderSteps();
         } catch (e) {
+            console.error('[SMAX Tool] loadData error:', e);
             showError(e.message);
+        }
+    }
+
+    // Error handling with better logging
+    function showError(msg) {
+        const box = document.getElementById('errorBox');
+        if (msg) {
+            console.error('[SMAX Tool Error]:', msg);
+            box.innerText = `⚠️ Error: ${msg}`;
+            box.style.display = 'block';
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    // Render environment variables
+    function renderVars() {
+        const varInputs = document.getElementById('var-inputs');
+        varInputs.innerHTML = '';
+        
+        if (!config.config) return;
+        
+        Object.entries(config.config).forEach(([key, defaultVal]) => {
+            const stored = localStorage.getItem(`v_${key}`) || defaultVal;
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
+                <label style="font-size:12px; color:#586069; display:block; margin-bottom:4px;">${key}</label>
+                <input type="text" id="var_${key}" value="${stored}" 
+                       onchange="localStorage.setItem('v_${key}', this.value)" 
+                       style="width:100%; box-sizing:border-box;">
+            `;
+            varInputs.appendChild(wrapper);
+        });
+    }
+
+    // Copy to clipboard function
+    function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log('[SMAX Tool] Copied to clipboard');
+                // Visual feedback could be added here
+            }).catch(err => {
+                console.error('[SMAX Tool] Failed to copy:', err);
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    }
+
+    // Fallback copy method for older browsers
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            console.log('[SMAX Tool] Copied using fallback method');
+        } catch (err) {
+            console.error('[SMAX Tool] Fallback copy failed:', err);
+            showError('Copy failed. Please copy manually.');
+        }
+        document.body.removeChild(textarea);
+    }
+
+    // Replace placeholders in commands with actual values
+    function interpolate(str) {
+        if (!str) return '';
+        let result = str;
+        Object.keys(config.config || {}).forEach(key => {
+            const val = localStorage.getItem(`v_${key}`) || config.config[key] || '';
+            result = result.replace(new RegExp(`{{${key}}}`, 'g'), val);
+        });
+        return result;
+    }
+
+    // Render steps with checkboxes and copy buttons
+    function renderSteps() {
+        const stepsList = document.getElementById('steps-list');
+        stepsList.innerHTML = '';
+        
+        if (!config.steps || config.steps.length === 0) {
+            stepsList.innerHTML = '<p style="color:#586069;">No steps found. Select a version and type.</p>';
+            return;
+        }
+        
+        config.steps.forEach(step => {
+            const isDone = localStorage.getItem(`s_done_${step.id}`) === 'true';
+            const card = document.createElement('div');
+            card.className = `card ${isDone ? 'step-done' : ''}`;
+            card.id = `step_${step.id}`;
+            
+            const checkboxHtml = `
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:12px;">
+                    <input type="checkbox" 
+                           id="check_${step.id}" 
+                           ${isDone ? 'checked' : ''} 
+                           onchange="toggleStep('${step.id}', this.checked)"
+                           style="width:18px; height:18px; cursor:pointer;">
+                    <strong style="font-size:16px;">${step.title || 'Untitled Step'}</strong>
+                </label>
+            `;
+            
+            const notesHtml = step.notes ? `<p style="color:#586069; margin:8px 0;">${step.notes}</p>` : '';
+            
+            const commandHtml = step.command ? `
+                <pre style="margin-top:12px; position:relative;">
+<button class="copy-btn" onclick="copyToClipboard(\`${interpolate(step.command).replace(/`/g, '\\`')}\`)">Copy</button>${interpolate(step.command)}</pre>
+            ` : '';
+            
+            card.innerHTML = checkboxHtml + notesHtml + commandHtml;
+            stepsList.appendChild(card);
+        });
+    }
+
+    // Toggle step completion status
+    function toggleStep(stepId, checked) {
+        localStorage.setItem(`s_done_${stepId}`, checked ? 'true' : 'false');
+        const card = document.getElementById(`step_${stepId}`);
+        if (card) {
+            if (checked) {
+                card.classList.add('step-done');
+            } else {
+                card.classList.remove('step-done');
+            }
+        }
+        console.log(`[SMAX Tool] Step ${stepId} marked as ${checked ? 'done' : 'pending'}`);
+    }
+
+    // Save data function to push localStorage state back to GitHub
+    async function saveData() {
+        if (!GITHUB_TOKEN) {
+            showError('GitHub token required. Please enter token and connect.');
+            return;
+        }
+        
+        if (!CURRENT_STATE_PATH) {
+            showError('No state file path selected. Please load data first.');
+            return;
+        }
+        
+        try {
+            // Collect all state from localStorage
+            const state = {};
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('s_') || key.startsWith('v_')) {
+                    state[key] = localStorage.getItem(key);
+                }
+            });
+            
+            // Convert state object to YAML
+            const yamlContent = jsyaml.dump(state);
+            const encodedContent = btoa(yamlContent);
+            
+            // Update file on GitHub
+            const updatePayload = {
+                message: `Update state for ${document.getElementById('selClient').value}`,
+                content: encodedContent
+            };
+            
+            // Only include SHA if file exists (for updates)
+            if (FILE_SHA) {
+                updatePayload.sha = FILE_SHA;
+            }
+            
+            console.log('[SMAX Tool] Saving state to GitHub:', CURRENT_STATE_PATH);
+            
+            const response = await fetch(
+                `https://api.github.com/repos/${OWNER}/${REPO}/contents/${CURRENT_STATE_PATH}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatePayload)
+                }
+            );
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`GitHub API error: ${errorData.message || response.statusText}`);
+            }
+            
+            const result = await response.json();
+            FILE_SHA = result.content.sha; // Update SHA for next save
+            
+            document.getElementById('syncInd').classList.add('online');
+            document.getElementById('syncStat').innerText = `Synced: ${document.getElementById('selVer').value}/${document.getElementById('selClient').value}`;
+            
+            console.log('[SMAX Tool] State saved successfully');
+            alert('✅ Progress saved to GitHub!');
+            
+        } catch (error) {
+            console.error('[SMAX Tool] Save failed:', error);
+            showError(`Failed to save: ${error.message}`);
         }
     }
 </script>
