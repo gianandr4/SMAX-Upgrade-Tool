@@ -34,7 +34,7 @@ kubectl get pods -n {{namespace}}
 
 #### Notes
 
-asda
+asd
 
 ---
 
@@ -46,6 +46,7 @@ Create secret for pulling images from private registry.
 ---
 **Personal Notes:**
 Remember to verify the secret was created:
+---
 ---
 ---
 
@@ -60,6 +61,7 @@ kubectl get secret <image_secret_name> -n <ESM_NAMESPACE>
 ### External DB Backup
 
 Backup BoB, SmartAnalytics, and IdM databases manually.
+---
 ---
 ---
 ---
@@ -84,6 +86,7 @@ Watch pods restart and come back online.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl get pods -n <ESM_NAMESPACE> -w
@@ -98,6 +101,7 @@ kubectl get pods -n <ESM_NAMESPACE> -w
 ### Verify SMAX Version
 
 Confirm the upgrade was successful.
+---
 ---
 ---
 ---
@@ -119,6 +123,7 @@ Test basic functionality: login, create ticket, check reports.
 ---
 ---
 ---
+---
 
 - [x] Step completed
 
@@ -126,6 +131,7 @@ Test basic functionality: login, create ticket, check reports.
 
 ### Test Checklist:
 
+---
 ---
 ---
 ---
