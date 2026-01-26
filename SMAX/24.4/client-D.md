@@ -21,15 +21,15 @@ Ensure all pods are in 2/2 or 1/1 Running state before starting.
 ---
 ---
 ---
+**Personal Notes:**
+![image.png](https://raw.githubusercontent.com/gianandr4/SMAX-Upgrade-Tool/main/24.4/images/1769447437446-image.png)
+---
 
 ```bash
 kubectl get pods -n {{namespace}}
 ```
 
 - [x] Step completed
-
-**Personal Notes:**
-![image.png](https://raw.githubusercontent.com/gianandr4/SMAX-Upgrade-Tool/main/24.4/images/1769447437446-image.png)
 
 ---
 
@@ -39,6 +39,9 @@ Create secret for pulling images from private registry.
 ---
 ---
 ---
+**Personal Notes:**
+Remember to verify the secret was created:
+---
 
 ```bash
 kubectl get secret <image_secret_name> -n <ESM_NAMESPACE>
@@ -46,14 +49,12 @@ kubectl get secret <image_secret_name> -n <ESM_NAMESPACE>
 
 - [ ] Step not completed
 
-**Personal Notes:**
-Remember to verify the secret was created:
-
 ---
 
 ### External DB Backup
 
 Backup BoB, SmartAnalytics, and IdM databases manually.
+---
 ---
 ---
 ---
@@ -74,6 +75,7 @@ Watch pods restart and come back online.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl get pods -n <ESM_NAMESPACE> -w
@@ -91,6 +93,7 @@ Confirm the upgrade was successful.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl get pods -n {{namespace}} -o jsonpath='{.items[0].spec.containers[0].image}'
@@ -105,6 +108,7 @@ kubectl get pods -n {{namespace}} -o jsonpath='{.items[0].spec.containers[0].ima
 Test basic functionality: login, create ticket, check reports.
 ---
 ---
+---
 
 - [x] Step completed
 
@@ -112,6 +116,7 @@ Test basic functionality: login, create ticket, check reports.
 
 ### Test Checklist:
 
+---
 ---
 ---
 ---
