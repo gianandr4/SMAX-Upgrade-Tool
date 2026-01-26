@@ -25,6 +25,7 @@ Ensure all pods are in 2/2 or 1/1 Running state before starting.
 #### History (from v24.4 - 2026-01-26)
 ![image.png](https://raw.githubusercontent.com/gianandr4/SMAX-Upgrade-Tool/main/24.4/images/1769447437446-image.png)
 ---
+---
 
 ```bash
 kubectl get pods -n {{namespace}}
@@ -40,6 +41,7 @@ asda
 ### Create Docker Registry Secret
 
 Create secret for pulling images from private registry.
+---
 ---
 ---
 ---
@@ -66,6 +68,7 @@ Backup BoB, SmartAnalytics, and IdM databases manually.
 ---
 ---
 ---
+---
 
 ```bash
 pg_dump -h {{nfs_server}} -U postgres bo_db > smax_backup_$(date +%Y%m%d).sql
@@ -80,6 +83,7 @@ pg_dump -h {{nfs_server}} -U postgres bo_db > smax_backup_$(date +%Y%m%d).sql
 ### Monitor Upgrade Progress
 
 Watch pods restart and come back online.
+---
 ---
 ---
 ---
@@ -104,6 +108,7 @@ Confirm the upgrade was successful.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl get pods -n {{namespace}} -o jsonpath='{.items[0].spec.containers[0].image}'
@@ -120,6 +125,7 @@ Test basic functionality: login, create ticket, check reports.
 ---
 ---
 ---
+---
 
 - [ ] Step not completed
 
@@ -127,6 +133,7 @@ Test basic functionality: login, create ticket, check reports.
 
 ### Test Checklist:
 
+---
 ---
 ---
 ---
