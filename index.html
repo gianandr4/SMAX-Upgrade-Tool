@@ -85,9 +85,8 @@
 <div class="controls">
     <input type="password" id="ghToken" placeholder="Paste GitHub Token" onchange="connect()">
     
-    <select id="selVer" onchange="loadData()">
-        <option value="24.1">Version 24.1</option>
-        <option value="24.2">Version 24.2</option>
+    <select id="selVer" onchange="onVersionChange()">
+        <option value="">Select version...</option>
     </select>
 
     <select id="selClient" onchange="loadData()">
@@ -501,6 +500,15 @@ let GITHUB_TOKEN = "";
         }
     }
 
+    // NEW: Handle version change - refresh client list
+    async function onVersionChange() {
+        const ver = document.getElementById('selVer').value;
+        if (!ver) return;
+        
+        await fetchClients(ver);
+        // Don't auto-load data, wait for user to select a client
+    }
+    
     async function loadData() {
         showError(""); 
         const ver = document.getElementById('selVer').value;
