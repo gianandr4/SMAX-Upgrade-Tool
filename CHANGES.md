@@ -1,169 +1,178 @@
 # SMAX Upgrade Tool - Enhancement Summary
 
 ## Overview
-This PR transforms the SMAX Upgrade Tool from a simple step list into a comprehensive wizard-based upgrade workflow tool with dual file format support.
+This update refines the SMAX Upgrade Tool to use a simplified markdown-only format with an improved hierarchical structure (H1=Title, H2=Stage, H3=Step).
 
-## Major Features Added
+## Major Changes
 
-### 1. Stage-Based Workflow
-- Steps are now organized into named stages (e.g., "Preparation", "Upgrade", "Verification")
-- Wizard-style navigation: one stage at a time with Previous/Next buttons
-- Stage tabs for quick navigation between stages
-- Progress bar showing overall completion across all stages
-- Each stage tab displays completion status (e.g., "3/5 steps")
+### 1. Markdown Structure Update
+**New Hierarchy:**
+- **H1 (#)**: Document title (e.g., "CLIENT A - SMAX Upgrade 24.4 → 24.6")
+- **H2 (##)**: Stage name (e.g., "Preparation", "Binaries Download", "Upgrade")
+- **H3 (###)**: Step title (e.g., "SMAX Health Check", "Apply Upgrade")
 
-### 2. Markdown File Format Support
-**Why Markdown?** Markdown provides a more natural, readable format for documentation-heavy workflows, eliminating YAML escaping issues and improving Git diffs.
+**Benefits:**
+- Clearer document organization with explicit title
+- Better semantic hierarchy
+- Improved readability
+- Consistent with standard markdown documentation practices
 
-**Format Structure:**
+### 2. Markdown-Only Format
+**Removed:**
+- All YAML file support (.yaml files)
+- Legacy file migration logic
+- Dual format handling complexity
+
+**Why Markdown Only?**
+- Simpler codebase (no format branching)
+- Better Git diffs and editing experience
+- More natural for documentation-heavy workflows
+- No YAML escaping issues
+
+### 3. Dynamic Version and Client Loading
+**Improvements:**
+- Version dropdown populated dynamically from repository folders
+- No hardcoded version options
+- Client dropdown updates automatically when version changes
+- Added `onVersionChange()` handler
+
+**Benefits:**
+- Works with any version folder structure
+- No code changes needed to add new versions
+- Automatic discovery of client files
+
+### 4. Comprehensive Template
+**New File:** `template.md`
+- 9 major stages covering full upgrade lifecycle
+- 40+ detailed steps with commands and notes
+- Covers: Planning, Binaries, Backup, Validation, Registry, Upgrade, Post-Upgrade, Testing, Optimization, Finalization
+- Ready to copy and customize for new clients
+
+### 5. File Cleanup
+**Removed all legacy files:**
+- `*.yaml` - Old YAML format files
+- `*-managed-steps.yaml` - Legacy managed format
+- `*-embedded-steps.yaml` - Legacy embedded format
+- `state-*.yaml` - Old state files
+- `state-*.json` - Old state files
+
+**Kept:**
+- `client-D.md` - Updated to new H1/H2/H3 structure
+- `client-E.md` - Updated to new H1/H2/H3 structure with comprehensive example
+- `template.md` - New comprehensive template
+
+## UI Features (Unchanged)
+
+### Core Features
+- ✅ **Stages Grouping**: Organize steps into logical stages
+- ✅ **Wizard View**: Navigate through one stage at a time
+- ✅ **Progress Tracking**: Visual progress bar across all stages
+- ✅ **Stage Tabs**: Quick navigation with completion indicators
+
+### Step Management
+- ✅ **Checkbox Tracking**: Mark steps as done/undone
+- ✅ **Command Interpolation**: Supports `{{variable}}` and `<variable>` formats
+- ✅ **Copy-to-Clipboard**: One-click copy for commands
+- ✅ **Reset Functionality**: Reset all steps with confirmation
+
+### Markdown Notes
+- ✅ **Per-Step Notes**: Add personal notes in markdown
+- ✅ **Live Preview**: Real-time markdown rendering
+- ✅ **Rich Formatting**: Full markdown support
+- ✅ **Persistent Storage**: Saves back to GitHub
+
+## Migration Guide
+
+For users with existing YAML files:
+
+1. **Manual Conversion:** Use the new `template.md` as a reference
+2. **Structure:** Convert to H1=Title, H2=Stage, H3=Step format
+3. **Config:** Move config section to YAML front-matter
+4. **Steps:** Convert each step to H3 with description, command, checkbox, and notes
+5. **Save:** Commit the new .md file to your version folder
+
+## File Format Example
+
 ```markdown
 ---
 config:
-  namespace: "itsma-clienta"
-  version: "24.4"
+  namespace: "itsma-client"
+  version: "24.6"
+  registry_server: "registry.example.com"
 ---
 
-# Preparation
+# CLIENT A - SMAX Upgrade 24.4 → 24.6
 
-## Health Check
-Description here
-\`\`\`bash
-kubectl get pods -n {{namespace}}
-\`\`\`
-- [x] Step completed
-**Personal Notes:** Additional notes here
-```
+## Preparation
 
-**Key Features:**
-- H1 headers (`#`) define stages
-- H2 headers (`##`) define steps
-- Code blocks contain commands
-- Checkboxes (`- [x]` / `- [ ]`) track completion
-- Personal notes section for user-added content
+### SMAX Health Check
 
-### 3. Unified Client Configuration
-- Single file per client containing everything: config vars, stages, steps, state, notes
-- Eliminates separate state files
-- Supports both `.yaml` and `.md` formats
-- Auto-detects format based on file extension
+Description of the step.
 
-### 4. Markdown Notes per Step
-- Add personal notes to any step in markdown format
-- Live preview as you type
-- Full markdown support: headings, lists, code blocks, emphasis, etc.
-- Notes persist to file (YAML or Markdown)
-
-### 5. Enhanced Command Interpolation
-Supports two placeholder formats:
-- `{{variable}}` - Traditional curly brace format
-- `<variable>` - Angle bracket format (common in kubectl commands)
-- Case-insensitive matching for angle brackets
-
-Example:
 ```bash
-kubectl create secret docker-registry <image_secret_name> \
-  --docker-username=<username> \
-  --docker-****** \
-  --docker-server=<registry_server> \
-  -n <ESM_NAMESPACE>
+kubectl get pods -n {{namespace}}
 ```
 
-### 6. Reset Functionality
-- "Reset All Done Steps" button clears all completion states
-- Confirmation modal prevents accidental resets
-- Updates both UI and persistent storage
+- [ ] Step not completed
 
-### 7. Backward Compatibility
-- Automatically migrates old format files on first load
-- Merges separate state files into unified configuration
-- Supports legacy file structure during transition
+**Personal Notes:**
+Add your notes here
 
-## File Format Comparison
+---
 
-| Aspect | Markdown | YAML |
-|--------|----------|------|
-| Readability | Excellent | Good |
-| Editing | Natural | Technical |
-| Git Diffs | Clean | Verbose |
-| Escaping | None needed | Required for special chars |
-| Best For | Documentation-heavy | Programmatic generation |
+### Next Step
 
-## UI Changes
-
-### Removed:
-- `selType` dropdown (managed/embedded distinction no longer needed)
-
-### Added:
-- Stage tabs with completion indicators
-- Progress bar and percentage
-- Stage navigation buttons (Previous/Next)
-- Reset button with modal confirmation
-- Per-step markdown note editor with live preview
-
-### Enhanced:
-- Client selector now dynamically scans for both `.yaml` and `.md` files
-- Visual feedback for completed steps
-- Better error handling and status messages
+...
+```
 
 ## Technical Implementation
 
-### New Functions:
-- `parseMarkdownFrontMatter()` - Extracts YAML front-matter from markdown
-- `parseMarkdownStages()` - Parses markdown content into stages/steps
-- `tryLoadMarkdown()` - Attempts to load markdown format file
-- `convertToMarkdown()` - Converts internal structure back to markdown
-- `renderStageTabs()` - Renders stage navigation tabs
-- `renderCurrentStage()` - Displays current stage in wizard view
-- `updateProgress()` - Updates progress bar
-- `prevStage()` / `nextStage()` - Stage navigation
-- `toggleNoteEditor()` / `saveNote()` - Note editing functionality
+### Updated Functions
+- `parseMarkdownStages()` - Now parses H1 as title, H2 as stage, H3 as step
+- `convertToMarkdown()` - Generates new structure with optional title parameter
+- `fetchClients()` - Only scans for .md files
+- `loadData()` - Simplified to markdown-only
+- `saveData()` - Always saves as markdown
+- `onVersionChange()` - New handler for version dropdown
 
-### Updated Functions:
-- `fetchClients()` - Now scans for both `.yaml` and `.md` files
-- `loadData()` - Tries markdown first, falls back to YAML
-- `saveData()` - Saves in original format (markdown or YAML)
-- `interpolate()` - Supports both `{{var}}` and `<var>` formats
+### Removed Functions
+- `migrateFromOldFormat()` - No longer needed
 
-## Sample Files
+### Code Simplification
+- Removed ~150 lines of YAML handling code
+- Removed dual-format branching logic
+- Cleaner, more maintainable codebase
 
-### Markdown Format:
-- `24.4/client-D.md` - Basic markdown example
-- `24.4/client-E.md` - Rich example with multiple stages and detailed notes
+## Breaking Changes
 
-### YAML Format:
-- `24.4/client-A.yaml` - Simple upgrade workflow
-- `24.4/client-B.yaml` - Multi-stage workflow with some completed steps
-- `24.4/client-C.yaml` - Minimal configuration
+⚠️ **YAML files are no longer supported**
+- All client configurations must be in .md format
+- Old .yaml files will not load
+- Migration must be done manually using template.md as reference
 
-## Migration Path
+## Screenshots
 
-For existing users:
-1. Old format files (`client-X-managed-steps.yaml` + `state-client-X.yaml`) continue to work
-2. On first load, they're automatically migrated to new unified format
-3. Users can then choose to convert to markdown format for better readability
+### Before (Dynamic Version Loading)
+![Before](https://github.com/user-attachments/assets/44b84a74-c1e2-4c5c-bc06-09c05cc61fb6)
 
-## Benefits
+### After (Dynamic Version & Markdown-Only)
+![After](https://github.com/user-attachments/assets/0b1b4ced-2ee7-47e7-ada6-2a7989122430)
 
-1. **Better Documentation**: Markdown format makes it easy to write rich documentation
-2. **Improved Organization**: Stages group related steps logically
-3. **Better UX**: Wizard-style navigation focuses attention on current stage
-4. **Flexibility**: Choose format that suits your workflow (markdown or YAML)
-5. **Progress Tracking**: Visual indicators show completion status at a glance
-6. **No Lock-In**: Switch between formats or continue using legacy format
+## Benefits Summary
 
-## Testing
-
-The implementation includes:
-- Sample files in both formats
-- Backward compatibility with legacy files
-- Error handling for malformed files
-- Console logging for debugging
+1. **Simpler**: Single format, less code complexity
+2. **Clearer**: Better document hierarchy with explicit titles
+3. **Easier**: More natural editing experience
+4. **Maintainable**: Cleaner codebase with less branching
+5. **Flexible**: Dynamic version/client discovery
+6. **Comprehensive**: Rich template with 40+ steps
+7. **Consistent**: Standard markdown practices
 
 ## Future Enhancements
 
 Possible additions:
 - Export to PDF/HTML
-- Stage-specific reset (instead of all steps)
-- Step dependencies (block later steps until prerequisites complete)
-- Multi-user collaboration features
-- Step timing/duration tracking
+- Step dependencies
+- Multi-user collaboration
+- Duration tracking
+- Approval workflows
