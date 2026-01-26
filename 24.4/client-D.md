@@ -24,7 +24,7 @@ Ensure all pods are in 2/2 or 1/1 Running state before starting.
 kubectl get pods -n {{namespace}}
 ```
 
-- [ ] Step not completed
+- [x] Step completed
 
 **Personal Notes:**
 
