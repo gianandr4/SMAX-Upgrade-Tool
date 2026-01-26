@@ -73,43 +73,66 @@
 </div>
 
 <script>
-    let GITHUB_TOKEN = "";
+let GITHUB_TOKEN = "";
     let FILE_SHA = "";
     let CURRENT_STATE_PATH = "";
     let config = { config: {}, steps: [] };
 
-    // Automatically detect Owner and Repo from GitHub Pages URL
     const pathParts = window.location.pathname.split('/').filter(p => p && p !== 'index.html');
     const OWNER = window.location.hostname.split('.')[0];
     const REPO = pathParts[0] || ""; 
 
-    function showError(msg) {
-        const box = document.getElementById('errorBox');
-        box.innerText = msg;
-        box.style.display = msg ? 'block' : 'none';
-    }
-
     async function connect() {
         GITHUB_TOKEN = document.getElementById('ghToken').value;
+        // Step 1: Dynamically find folders
+        await fetchFolders();
+        // Step 2: Load data for the first folder found
         loadData();
     }
 
+    // NEW: Automatically find version folders (e.g., 24.4, 25.1)
+    async function fetchFolders() {
+        if (!GITHUB_TOKEN) return;
+        try {
+            const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/`, {
+                headers: { Authorization: `token ${GITHUB_TOKEN}` }
+            });
+            const items = await resp.json();
+            const folderSelect = document.getElementById('selVer');
+            
+            // Clear existing options
+            folderSelect.innerHTML = "";
+
+            // Filter for directories that look like versions (numbers/dots)
+            const folders = items.filter(item => item.type === 'dir' && !item.name.startsWith('.'));
+            
+            folders.forEach(folder => {
+                const opt = document.createElement('option');
+                opt.value = folder.name;
+                opt.innerText = `Version ${folder.name}`;
+                folderSelect.appendChild(opt);
+            });
+        } catch (e) {
+            showError("Failed to auto-detect folders. check your Token permissions.");
+        }
+    }
+
     async function loadData() {
-        showError(""); // Clear errors
+        showError(""); 
         const ver = document.getElementById('selVer').value;
         const type = document.getElementById('selType').value;
         const client = document.getElementById('selClient').value;
         
+        if (!ver) return; // Wait until folders are loaded
+
         const yamlStepsPath = `${ver}/${type}`;
         CURRENT_STATE_PATH = `${ver}/state-${client}.yaml`;
 
         try {
-            // 1. Load the upgrade steps
             const yResp = await fetch(yamlStepsPath);
-            if (!yResp.ok) throw new Error(`Could not find YAML steps at: ${yamlStepsPath}`);
+            if (!yResp.ok) throw new Error(`File not found: ${yamlStepsPath}`);
             config = jsyaml.load(await yResp.text());
 
-            // 2. Load the state from GitHub API if token exists
             if (GITHUB_TOKEN) {
                 const sResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${CURRENT_STATE_PATH}`, {
                     headers: { Authorization: `token ${GITHUB_TOKEN}` }
@@ -120,15 +143,21 @@
                     FILE_SHA = data.sha;
                     const state = jsyaml.load(atob(data.content)) || {};
                     
-                    // Cleanup local storage and load fresh client state
                     Object.keys(localStorage).forEach(k => k.startsWith('s_') && localStorage.removeItem(k));
                     Object.entries(state).forEach(([k, v]) => localStorage.setItem(k, v));
                     
                     document.getElementById('syncInd').classList.add('online');
-                    document.getElementById('syncStat').innerText = `Synced: ${client}`;
+                    document.getElementById('syncStat').innerText = `Synced: ${ver}/${client}`;
                 } else {
-                    throw new Error(`State file missing: ${CURRENT_STATE_PATH}. Please create this file in your repo.`);
+                    throw new Error(`State file missing: ${CURRENT_STATE_PATH}`);
                 }
             }
             renderVars();
             renderSteps();
+        } catch (e) {
+            showError(e.message);
+        }
+    }
+</script>
+</body>
+</html>
