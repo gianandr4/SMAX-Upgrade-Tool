@@ -24,3 +24,7 @@ If you'll perform an automated upgrade of OMT as a regular user, for example, yo
 
 ### - [ ] Complete
 
+### Snapshots
+
+### - [ ] Complete
+
