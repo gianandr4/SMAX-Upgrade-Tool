@@ -46,7 +46,7 @@ kubectl get secret <image_secret_name> -n <ESM_NAMESPACE>
 
 Some notes about the registry secret creation.
 
-### - [ ] Complete
+### - [x] Complete
 
 ## Upgrade
 
