@@ -33,7 +33,6 @@ config:
 
 Review the official SMAX release notes to understand new features and changes.
 - [ ] Step not completed
----
 
 - [ ] Step not completed
 ### Schedule Maintenance Window
