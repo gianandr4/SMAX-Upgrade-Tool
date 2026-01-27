@@ -14,9 +14,7 @@ config:
 
 ## OMT Prerequisite tasks
 
-### - [ ] Complete
-
-./autoUpgrade -n 192.0.2.0 -u <username>
+### aaa
 
 ### - [ ] Complete
 
