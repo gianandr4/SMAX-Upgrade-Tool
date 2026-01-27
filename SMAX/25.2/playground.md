@@ -16,7 +16,8 @@ config:
 
 ### aaa
 
-./autoUpgrade -n 192.0.2.0 -u <username>
+If you'll perform an automated upgrade of OMT as a regular user, for example, you can run ./autoUpgrade -n 192.0.2.0 -u <username>.
+
 ```bash
 ./autoUpgrade -n 192.0.2.0 -u <username>
 ```
