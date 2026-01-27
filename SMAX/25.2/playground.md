@@ -14,36 +14,3 @@ config:
 
 ## OMT Prerequisite tasks
 
-### Snapshots
-
-
-- [ ] Down smax
-
-### AutoUpgrade 
-
-### - [ ] Complete
-
-### AutoUpgrade 
-
-### - [ ] Complete
-
-### - [ ] Complete
-
-### AutoUpgrade 
-
-### - [ ] Complete
-
-### - [ ] Complete
-
-### AutoUpgrade 
-
-### - [ ] Complete
-
-### - [ ] Complete
-
-### AutoUpgrade 
-
-### - [ ] Complete
-
-### - [ ] Complete
-
