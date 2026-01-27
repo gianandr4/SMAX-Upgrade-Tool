@@ -26,9 +26,25 @@ config:
 
 ### AutoUpgrade 
 
+### - [ ] Complete
+
 ### AutoUpgrade 
 
 ### AutoUpgrade 
+
+### - [ ] Complete
+
+### AutoUpgrade 
+
+### AutoUpgrade 
+
+### - [ ] Complete
+
+### AutoUpgrade 
+
+### AutoUpgrade 
+
+### - [ ] Complete
 
 ### AutoUpgrade 
 
@@ -37,6 +53,8 @@ If you'll perform an automated upgrade of OMT as a regular user, for example, yo
 ```bash
 .<omt_binaries_path>/autoUpgrade -n 192.0.2.0 -u <username>
 ```
+
+### - [ ] Complete
 
 ### - [ ] Complete
 
