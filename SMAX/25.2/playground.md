@@ -16,7 +16,6 @@ config:
 
 ### Snapshots
 
-asd
 - [ ] Down smax 
 - [ ] Down core 
 - [ ] Kubestop.sh 
@@ -27,7 +26,6 @@ asd
 - [ ] Up core 
 - [ ] Up smax 
 - [ ] Kube-start.sh on workers 
-asd
 
 ### - [ ] Complete
 
