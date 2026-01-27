@@ -38,7 +38,7 @@ config:
 ### Schedule Maintenance Window
 
 Review the official SMAX release notes to understand new features and changes.
-- [ ] Step not completed
+---
 
 - [ ] Step not completed
 
@@ -47,22 +47,7 @@ Review the official SMAX release notes to understand new features and changes.
 ### Schedule Maintenance Window
 
 Coordinate with stakeholders to schedule an appropriate maintenance window.
----
----
----
----
----
----
----
----
----
----
----
----
----
----
----
----
+- [ ] Step not completed
 
 - [ ] Step not completed
 
@@ -73,6 +58,7 @@ Coordinate with stakeholders to schedule an appropriate maintenance window.
 ### Download SMAX Binaries
 
 Download the SMAX 24.4 installation binaries.
+---
 ---
 ---
 ---
@@ -118,6 +104,7 @@ Upload images to the private registry.
 ---
 ---
 ---
+---
 
 ```bash
 ./upload-images.sh -r {{registry_server}} -u {{username}} -p {{password}}
@@ -146,6 +133,7 @@ Create full backups of all SMAX databases.
 ---
 ---
 ---
+---
 
 ```bash
 pg_dump -h {{nfs_server}} -U postgres bo_db > {{backup_location}}/smax_backup_$(date +%Y%m%d).sql
@@ -158,6 +146,7 @@ pg_dump -h {{nfs_server}} -U postgres bo_db > {{backup_location}}/smax_backup_$(
 ### Backup Kubernetes Configurations
 
 Export all Kubernetes configurations.
+---
 ---
 ---
 ---
@@ -204,6 +193,7 @@ Ensure all pods are running before starting.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl get pods -n {{namespace}}
@@ -216,6 +206,7 @@ kubectl get pods -n {{namespace}}
 ### Verify Storage
 
 Ensure sufficient storage is available.
+---
 ---
 ---
 ---
@@ -261,6 +252,7 @@ Review current CPU and memory utilization.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl top nodes
@@ -276,6 +268,7 @@ kubectl top pods -n {{namespace}}
 ### Create Registry Secret
 
 Create secret for pulling images.
+---
 ---
 ---
 ---
@@ -324,6 +317,7 @@ Test registry connectivity.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl run test-registry --image=<registry_server>/smax/sample:24.4 -n {{namespace}}
@@ -339,6 +333,7 @@ kubectl delete pod test-registry -n {{namespace}}
 ### Enable Maintenance Mode
 
 Enable maintenance mode to prevent user access.
+---
 ---
 ---
 ---
@@ -379,6 +374,7 @@ Execute the main upgrade process.
 ---
 ---
 ---
+---
 
 ```bash
 ./upgrade.sh -n {{namespace}} -v {{version}}
@@ -391,6 +387,7 @@ Execute the main upgrade process.
 ### Monitor Pod Status
 
 Monitor the upgrade and watch for errors.
+---
 ---
 ---
 ---
@@ -437,6 +434,7 @@ Confirm all components are running version 24.4.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl get pods -n {{namespace}} -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\n"}{end}'
@@ -449,6 +447,7 @@ kubectl get pods -n {{namespace}} -o jsonpath='{range .items[*]}{.metadata.name}
 ### Health Check
 
 Ensure all pods are running.
+---
 ---
 ---
 ---
@@ -491,6 +490,7 @@ kubectl get pods -n {{namespace}}
 ---
 ---
 ---
+---
 
 - [ ] Step not completed
 
@@ -499,6 +499,7 @@ kubectl get pods -n {{namespace}}
 ### Test User Authentication
 
 Verify login functionality.
+---
 ---
 ---
 ---
@@ -539,6 +540,7 @@ Create a test incident to verify ITSM functionality.
 ---
 ---
 ---
+---
 
 - [ ] Step not completed
 
@@ -547,6 +549,7 @@ Create a test incident to verify ITSM functionality.
 ### Test Notifications
 
 Verify email notifications are working.
+---
 ---
 ---
 ---
@@ -587,6 +590,7 @@ Access the Service Portal and verify all widgets load.
 ---
 ---
 ---
+---
 
 - [ ] Step not completed
 
@@ -595,6 +599,7 @@ Access the Service Portal and verify all widgets load.
 ### Test Reporting
 
 Run sample reports.
+---
 ---
 ---
 ---
@@ -637,6 +642,7 @@ Monitor resource usage post-upgrade.
 ---
 ---
 ---
+---
 
 ```bash
 kubectl top pods -n {{namespace}}
@@ -649,6 +655,7 @@ kubectl top pods -n {{namespace}}
 ### Optimize Database
 
 Run database maintenance tasks.
+---
 ---
 ---
 ---
@@ -695,6 +702,7 @@ Inform stakeholders of successful upgrade completion.
 ---
 ---
 ---
+---
 
 - [ ] Step not completed
 
@@ -703,6 +711,7 @@ Inform stakeholders of successful upgrade completion.
 ### Disable Maintenance Mode
 
 Update internal documentation with new version info.
+---
 ---
 ---
 ---
