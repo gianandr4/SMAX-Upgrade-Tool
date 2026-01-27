@@ -25,9 +25,11 @@ kubectl get pods -n {{namespace}}
 
 #### Notes
 
+![image.png](https://raw.githubusercontent.com/gianandr4/SMAX-Upgrade-Tool/main/SMAX/24.4/images/1769514572183-image.png)
 Current version notes here
 
 ##### 24.4
+
 Current version notes here
 
 ### - [x] Complete
@@ -61,6 +63,7 @@ kubectl get pods -n <ESM_NAMESPACE> -w
 Monitor the upgrade process carefully.
 
 ##### 24.3
+
 In previous versions, this step took longer.
 
 ### - [x] Complete
@@ -90,7 +93,14 @@ Test basic functionality: login, create ticket, check reports.
 Run the standard smoke test suite.
 
 ##### 24.4
+
 New features in 24.4 require additional testing.
 
+### - [ ] Complete
+
 ### - [ ] Complete</content>
+
 <parameter name="filePath">c:\Users\Andreas\Desktop\Projects\SMAX-Upgrade-Tool\SMAX\24.4\client-D-sample.md
+
+### - [ ] Complete
+
