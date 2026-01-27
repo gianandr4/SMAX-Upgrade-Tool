@@ -6,7 +6,6 @@ config:
   installation_path: /opt/cdf
   omt_binaries_path: /
   CDF_HOME: /
-
   namespace: itsma-clienta
   nfs_server: nfs.internal.com
   username: admin
@@ -18,7 +17,6 @@ config:
 
 ## OMT Prerequisite tasks
 
-
 ### SMAX Health Check
 
 Ensure all pods are in 2/2 or 1/1 Running state before starting.
@@ -27,5 +25,5 @@ Ensure all pods are in 2/2 or 1/1 Running state before starting.
 kubectl get pods -n {{namespace}}
 ```
 
-#### Notes
 ### - [x] Complete
+
