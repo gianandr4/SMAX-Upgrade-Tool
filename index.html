@@ -359,6 +359,7 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
 
     // Initialize token input field if cached and auto-connect
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('[SMAX Tool] DOMContentLoaded fired');
         // Set default product to SMAX
         const cachedProduct = sessionStorage.getItem('selected_product') || 'SMAX';
         document.getElementById('selProduct').value = cachedProduct;
@@ -367,9 +368,15 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         const titleElement = document.getElementById('appTitle');
         titleElement.textContent = `${cachedProduct} Multi-Tenant Operations`;
         
-        if (GITHUB_TOKEN) {
-            document.getElementById('ghToken').value = GITHUB_TOKEN;
+        const cachedToken = sessionStorage.getItem('github_token');
+        console.log('[SMAX Tool] Cached token exists:', !!cachedToken);
+        if (cachedToken) {
+            GITHUB_TOKEN = cachedToken;
+            document.getElementById('ghToken').value = cachedToken;
+            console.log('[SMAX Tool] Attempting auto-connect');
             connect(true); // true indicates auto-connection
+        } else {
+            console.log('[SMAX Tool] No cached token, waiting for manual input');
         }
     });
 
@@ -383,6 +390,7 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         }
         // Cache token in session storage
         sessionStorage.setItem('github_token', GITHUB_TOKEN);
+        console.log('[SMAX Tool] Token set, length:', GITHUB_TOKEN.length);
         if (!autoConnect) {
             console.log('[SMAX Tool] Connecting with GitHub token...');
         } else {
@@ -413,42 +421,61 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 headers: { Authorization: `token ${GITHUB_TOKEN}` }
             });
             
+            console.log(`[SMAX Tool] API call to ${OWNER}/${REPO}/contents/${basePath} returned status: ${resp.status}`);
+            
             if (!resp.ok) {
                 const errorData = await resp.json();
+                console.error(`[SMAX Tool] fetchFolders failed:`, errorData);
                 throw new Error(`GitHub API: ${errorData.message || resp.statusText}`);
             }
             
             const items = await resp.json();
+            console.log(`[SMAX Tool] fetchFolders received ${items.length} items:`, items.map(item => `${item.name} (${item.type})`));
             const folderSelect = document.getElementById('selVer');
             
             // Clear existing options
             folderSelect.innerHTML = "";
 
-            // Filter for directories that look like versions (numbers/dots)
-            const folders = items.filter(item => item.type === 'dir' && !item.name.startsWith('.'));
+            // Collect directories
+            const directories = new Set();
+            
+            // Add actual directories
+            items.filter(item => item.type === 'dir' && !item.name.startsWith('.')).forEach(item => {
+                directories.add(item.name);
+            });
+            
+            // Also infer directories from file paths
+            items.filter(item => item.type === 'file').forEach(item => {
+                const pathParts = item.path.replace(basePath + '/', '').split('/');
+                if (pathParts.length > 1) {
+                    directories.add(pathParts[0]);
+                }
+            });
+            
+            const folders = Array.from(directories).sort();
             
             if (folders.length === 0) {
                 showError('No version folders found in repository');
                 return;
             }
             
-            folders.forEach(folder => {
+            folders.forEach(folderName => {
                 const opt = document.createElement('option');
-                opt.value = folder.name;
-                opt.innerText = `Version ${folder.name}`;
+                opt.value = folderName;
+                opt.innerText = `Version ${folderName}`;
                 folderSelect.appendChild(opt);
                 
                 // Store in menu data
-                menuData[folder.name] = [];
+                menuData[folderName] = [];
             });
             
-            console.log(`[SMAX Tool] Found ${folders.length} version folder(s)`);
+            console.log(`[SMAX Tool] Found ${folders.length} version folder(s): ${folders.join(', ')}`);
             
             renderClientMenu();
             
             // Load clients for cached version or first version
             const cachedVersion = sessionStorage.getItem('selected_version');
-            const targetVersion = cachedVersion && folders.some(f => f.name === cachedVersion) ? cachedVersion : folders[0].name;
+            const targetVersion = cachedVersion && folders.includes(cachedVersion) ? cachedVersion : folders[0];
             
             if (targetVersion) {
                 document.getElementById('selVer').value = targetVersion;
@@ -472,10 +499,13 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             
             if (!resp.ok) {
                 const errorData = await resp.json();
+                console.error(`[SMAX Tool] Failed to fetch clients for ${version}:`, errorData);
                 throw new Error(`GitHub API: ${errorData.message || resp.statusText}`);
             }
             
             const items = await resp.json();
+            console.log(`[SMAX Tool] Found ${items.length} items in ${basePath}/${version}:`, items.map(item => `${item.name} (${item.type})`));
+            
             const clientSelect = document.getElementById('selClient');
             
             // Clear existing options
@@ -489,8 +519,13 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 item.name !== 'template.md'
             );
             
+            console.log(`[SMAX Tool] Found ${clientFiles.length} client files:`, clientFiles.map(f => f.name));
+            
             if (clientFiles.length === 0) {
-                clientSelect.innerHTML = '<option value="">No clients found</option>';
+                // If no clients found, it might be a timing issue after upgrade
+                // Try again after a short delay
+                console.log(`[SMAX Tool] No client files found, retrying in 2 seconds...`);
+                setTimeout(() => fetchClients(version), 2000);
                 return;
             }
             
@@ -500,6 +535,7 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 // Extract client name from filename (e.g., "client-A.md")
                 const clientName = file.name.replace(/\.md$/, '');
                 clients.add(clientName);
+                console.log(`[SMAX Tool] Added client: ${clientName} from file: ${file.name}`);
             });
             
             clients.forEach(client => {
@@ -1845,7 +1881,7 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         try {
             // Always save as markdown
             const fileContent = convertToMarkdown();
-            const encodedContent = btoa(fileContent);
+            const encodedContent = btoa(unescape(encodeURIComponent(fileContent)));
             
             // Update file on GitHub
             const updatePayload = {
@@ -1883,37 +1919,11 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             document.getElementById('syncInd').classList.add('online');
             document.getElementById('syncStat').innerText = `Synced: ${document.getElementById('selVer').value}/${document.getElementById('selClient').value}`;
             
-            console.log('[SMAX Tool] Data saved successfully');
-            showSuccess('Progress saved to GitHub!');
-            
-        } catch (error) {
-            console.error('[SMAX Tool] Save failed:', error);
-            showError(`Failed to save: ${error.message}`);
-        }
-    }
-    
-    // Autosave functionality
-    function toggleAutosave() {
-        autosaveEnabled = document.getElementById('autosaveToggle').checked;
-        const status = document.getElementById('autosave-status');
-        if (autosaveEnabled) {
-            status.textContent = 'Autosave enabled';
-            status.style.color = 'var(--primary)';
-        } else {
-            status.textContent = '';
-            if (autosaveTimeout) {
-                clearTimeout(autosaveTimeout);
-                autosaveTimeout = null;
-            }
-        }
-    }
-    
-    function triggerAutosave() {
-        if (!autosaveEnabled) return;
-        
-        // Clear existing timeout
-        if (autosaveTimeout) {
+            console.log('[SMAX Tool] Data saved successfully, SHA:', result.content.sha);
             clearTimeout(autosaveTimeout);
+        } catch (e) {
+            console.error('[SMAX Tool] saveData error:', e);
+            showError(`Failed to save data: ${e.message}`);
         }
         
         // Set new timeout (debounced save after 3 seconds)
@@ -2444,6 +2454,16 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             // Refresh the version list to include the new version
             await fetchFolders();
             
+            // Ensure the new version is selected
+            document.getElementById('selVer').value = targetVersion;
+            
+            // Fetch clients for the new version
+            await fetchClients(targetVersion);
+            
+            // Ensure the client is selected
+            document.getElementById('selClient').value = currentClient;
+            
+            // Load the data for the new version
             await loadData();
             
         } catch (e) {
