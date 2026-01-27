@@ -4,7 +4,7 @@ config:
   ESM_NAMESPACE: itsma-clienta
   version: '24.4'
   installation_path: /opt/cdf
-  omt_binaries_path: /home/omtbina
+  omt_binaries_path: /home/omtbinaa
   CDF_HOME: /
   namespace: itsma-clienta
   username: ptadmin
