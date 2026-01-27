@@ -17,6 +17,7 @@ A comprehensive UI tool for SMAX upgrades with wizard-style navigation, inline e
 - **Add Steps/Stages** - Buttons to dynamically add new content
 - **Version Upgrade** - Clone configuration to new version with automatic history archiving
 - **YAML Migration** - Automatic one-time conversion of YAML files to Markdown
+- **Full PDF Export** - Generate beautifully formatted PDFs of all stages with colored status indicators
 
 ## File Structure
 
@@ -90,7 +91,7 @@ Old YAML format files are automatically converted to Markdown on first load:
 5. **Edit Inline**: Click any title, stage, step, command, or description to edit
 6. **Add Notes**: Click 💬 button on any step to add/edit markdown notes
 7. **Upload Images**: Paste (Ctrl+V) or drag images into note editor
-8. **Export PDF**: Click "Export PDF" to generate a PDF of the current stage
+8. **Export Full PDF**: Click "Export Full PDF" to generate a beautifully formatted PDF of all stages with colored status indicators and proper layout
 9. **Toggle Autosave**: Enable optional auto-save for automatic GitHub syncing
 10. **Save**: Click "Save Progress" to persist changes to GitHub
 
