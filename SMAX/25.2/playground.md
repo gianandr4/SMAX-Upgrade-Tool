@@ -16,13 +16,13 @@ config:
 
 ### Snapshots
 
-Down smax 
+- [ ] Down smax 
 
 Down core 
 
 Kubestop.sh 
 
-Οταν κατεβει το cluster – shutdown 
+ÎÏÎ±Î½ ÎºÎ±ÏÎµÎ²ÎµÎ¹ ÏÎ¿ cluster â shutdown 
 
 Suspend ucmdb machines 
 
