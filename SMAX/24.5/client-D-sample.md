@@ -25,6 +25,7 @@ kubectl get pods -n {{namespace}}
 
 #### Notes
 
+![image.png](https://raw.githubusercontent.com/gianandr4/SMAX-Upgrade-Tool/main/SMAX/24.5/images/1769507640983-image.png)
 dada
 
 ##### 24.4
