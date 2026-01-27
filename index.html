@@ -347,6 +347,13 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
     let editingStageIndex, editingStepIndex;
     let menuData = {}; // Store versions and their clients
 
+    // Trigger autosave after changes
+    function triggerAutosave() {
+        if (autosaveEnabled) {
+            saveData();
+        }
+    }
+
     // Hardcoded repository information for personal use
     const OWNER = "gianandr4";
     const REPO = "SMAX-Upgrade-Tool"; 
@@ -634,33 +641,6 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 continue;
             }
             
-            // H3 = New Step
-            if (line.startsWith('### ')) {
-                if (currentStep && currentStage) {
-                    currentStep.rawMd = rawBuffer.join('\n');
-                    currentStage.steps.push(currentStep);
-                }
-                
-                const title = line.substring(4).trim();
-                currentStep = {
-                    id: title.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
-                    title: title,
-                    notes: '',
-                    command: '',
-                    done: false,
-                    userNotes: {} // Changed from string to object
-                };
-                collectingCommand = false;
-                collectingNotes = false;
-                collectingSubsection = false;
-                commandBuffer = [];
-                notesBuffer = [];
-                subsectionBuffer = [];
-                currentSubsection = '';
-                rawBuffer = [line]; // Start collecting raw for this step
-                continue;
-            }
-            
             // Collect raw line for current step
             if (currentStep) {
                 rawBuffer.push(line);
@@ -746,6 +726,9 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                     collectingNotes = false;
                     collectingSubsection = false;
                     // Don't continue here - let the header be processed normally
+                } else if (line.trim() === '---') {
+                    // Skip separator lines
+                    continue;
                 } else if (collectingSubsection) {
                     subsectionBuffer.push(line);
                     continue;
@@ -754,6 +737,33 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                     notesBuffer.push(line);
                     continue;
                 }
+            }
+            
+            // H3 = New Step
+            if (line.startsWith('### ')) {
+                if (currentStep && currentStage) {
+                    currentStep.rawMd = rawBuffer.join('\n');
+                    currentStage.steps.push(currentStep);
+                }
+                
+                const title = line.substring(4).trim();
+                currentStep = {
+                    id: title.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+                    title: title,
+                    notes: '',
+                    command: '',
+                    done: false,
+                    userNotes: {} // Changed from string to object
+                };
+                collectingCommand = false;
+                collectingNotes = false;
+                collectingSubsection = false;
+                commandBuffer = [];
+                notesBuffer = [];
+                subsectionBuffer = [];
+                currentSubsection = '';
+                rawBuffer = [line]; // Start collecting raw for this step
+                continue;
             }
             
             // Regular content (step description/notes)
@@ -1451,6 +1461,8 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             noteTextarea.disabled = false;
             noteTextarea.readOnly = false;
             noteTextarea.value = step.userNotes && Object.keys(step.userNotes).length > 0 ? userNotesToMarkdown(step.userNotes) : '';
+            console.log('[SMAX Tool] Notes for step', stepIndex, 'userNotes:', step.userNotes);
+            console.log('[SMAX Tool] Notes markdown:', noteTextarea.value);
             noteTextarea.placeholder = 'Enter notes in Markdown format...\n\nUse #### Notes to start the notes section\nUse ##### SubsectionName for subsections\n\nExample:\n#### Notes\n\n##### Current\n\nMy current notes here\n\n##### 24.4\n\nNotes from version 24.4\n\nYou can:\n- Paste images directly (Ctrl+V)\n- Drag and drop images\n- Use **bold**, *italic*, lists, etc.';
             noteTextarea.rows = 6;
             noteTextarea.style.marginBottom = '10px';
@@ -2089,8 +2101,15 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
         if (!userNotes || Object.keys(userNotes).length === 0) return '';
         
         let md = '#### Notes\n\n';
+        // Put Current notes directly under #### Notes (no ##### header)
+        if (userNotes['Current']) {
+            md += `${userNotes['Current']}\n\n`;
+        }
+        // Add version-specific notes with ##### headers in the order they appear in the object (preserves file order)
         for (const [subsection, content] of Object.entries(userNotes)) {
-            md += `##### ${subsection}\n\n${content}\n\n`;
+            if (subsection !== 'Current' && content && content.trim()) {
+                md += `##### ${subsection}\n\n${content}\n\n`;
+            }
         }
         return md.trim();
     }
@@ -2411,15 +2430,14 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             // Archive current notes under #### history in each step
             config.stages.forEach(stage => {
                 stage.steps.forEach(step => {
-                    if (step.userNotes && Object.keys(step.userNotes).length > 0) {
+                    if (step.userNotes && step.userNotes['Current']) {
                         const currentVersion = document.getElementById('selVer').value;
-                        const historyEntry = `\n\n---\n\n**📚 Previous Version Notes (v${currentVersion} - ${new Date().toISOString().split('T')[0]})**\n\n${userNotesToMarkdown(step.userNotes)}`;
                         
-                        // Initialize or update the history subsection
-                        if (!step.userNotes[currentVersion]) {
-                            step.userNotes[currentVersion] = '';
-                        }
-                        step.userNotes[currentVersion] += historyEntry;
+                        // Move current notes to the previous version's archive
+                        step.userNotes[currentVersion] = step.userNotes['Current'];
+                        
+                        // Clear current notes for fresh start in new version
+                        step.userNotes['Current'] = '';
                     }
                     // Reset done status
                     step.done = false;
