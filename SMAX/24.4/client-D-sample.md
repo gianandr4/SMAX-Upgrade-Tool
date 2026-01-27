@@ -48,6 +48,10 @@ Some notes about the registry secret creation.
 
 ### - [x] Complete
 
+### asd
+
+### - [ ] Complete
+
 ## Upgrade
 
 ### Monitor Upgrade Progress
