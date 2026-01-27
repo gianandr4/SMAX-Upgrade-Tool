@@ -31,7 +31,6 @@ kubectl get pods -n {{namespace}}
 Current version notes here
 ##### 24.4
 Current version notes here
----
 
 ### Create Docker Registry Secret
 
