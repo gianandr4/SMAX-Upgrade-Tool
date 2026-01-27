@@ -90,8 +90,9 @@ Old YAML format files are automatically converted to Markdown on first load:
 5. **Edit Inline**: Click any title, stage, step, command, or description to edit
 6. **Add Notes**: Click 💬 button on any step to add/edit markdown notes
 7. **Upload Images**: Paste (Ctrl+V) or drag images into note editor
-8. **Toggle Autosave**: Enable optional auto-save for automatic GitHub syncing
-9. **Save**: Click "Save Progress" to persist changes to GitHub
+8. **Export PDF**: Click "Export PDF" to generate a PDF of the current stage
+9. **Toggle Autosave**: Enable optional auto-save for automatic GitHub syncing
+10. **Save**: Click "Save Progress" to persist changes to GitHub
 
 ### Keyboard Shortcuts & Interactions
 - **Click** - Edit any text element (title, stage, step, command, description)
@@ -112,6 +113,7 @@ Old YAML format files are automatically converted to Markdown on first load:
 - ✅ **Inline Editing**: Click to edit any content element
 - ✅ **Add Steps/Stages**: Dynamic content creation with dedicated buttons
 - ✅ **Raw Editor**: Full file editing with markdown syntax
+- ✅ **PDF Export**: Export current stage to PDF for sharing/printing
 - ✅ **Command Interpolation**: Supports both `{{variable}}` and `<variable>` formats
 - ✅ **Copy-to-Clipboard**: One-click copy for commands with variable substitution
 

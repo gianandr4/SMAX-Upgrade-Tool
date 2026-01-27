@@ -6,6 +6,8 @@
     <title>SMAX Multi-Client Upgrade Hub</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
             --primary: #2ea44f; 
@@ -182,6 +184,10 @@
 
     <button onclick="saveData()" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
         💾 Save Progress
+    </button>
+    
+    <button onclick="exportToPDF()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+        📄 Export PDF
     </button>
     
     <button onclick="loadData()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
@@ -2623,6 +2629,127 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 }
             }
         });
+    }
+
+    // PDF Export Functionality
+    async function exportToPDF() {
+        if (!config || !config.title) {
+            showError('No data loaded. Please load a client first.');
+            return;
+        }
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            // PDF settings
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 20;
+            let yPosition = margin;
+            const lineHeight = 7;
+            
+            // Title
+            pdf.setFontSize(18);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(config.title, margin, yPosition);
+            yPosition += lineHeight * 2;
+            
+            // Add current stage content
+            const currentStage = config.stages[currentStageIndex];
+            if (currentStage) {
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(currentStage.name, margin, yPosition);
+                yPosition += lineHeight * 1.5;
+                
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'normal');
+                
+                currentStage.steps.forEach((step, index) => {
+                    // Check if we need a new page
+                    if (yPosition > pageHeight - margin * 2) {
+                        pdf.addPage();
+                        yPosition = margin;
+                    }
+                    
+                    // Step title
+                    pdf.setFont('helvetica', 'bold');
+                    const stepTitle = `${index + 1}. ${step.title}`;
+                    const titleLines = pdf.splitTextToSize(stepTitle, pageWidth - margin * 2);
+                    pdf.text(titleLines, margin, yPosition);
+                    yPosition += titleLines.length * lineHeight;
+                    
+                    // Completion status
+                    pdf.setFont('helvetica', 'normal');
+                    const status = step.done ? '✓ Completed' : '○ Not completed';
+                    pdf.text(status, margin + 10, yPosition);
+                    yPosition += lineHeight;
+                    
+                    // Step content
+                    if (step.notes) {
+                        const contentLines = pdf.splitTextToSize(step.notes, pageWidth - margin * 2 - 10);
+                        pdf.text(contentLines, margin + 10, yPosition);
+                        yPosition += contentLines.length * lineHeight;
+                    }
+                    
+                    // Commands
+                    if (step.command) {
+                        pdf.setFont('courier', 'normal');
+                        pdf.setFontSize(10);
+                        const cmdLines = pdf.splitTextToSize(step.command, pageWidth - margin * 2 - 10);
+                        pdf.text(cmdLines, margin + 10, yPosition);
+                        yPosition += cmdLines.length * lineHeight;
+                        pdf.setFontSize(12);
+                        pdf.setFont('helvetica', 'normal');
+                    }
+                    
+                    // Notes
+                    if (step.userNotes && Object.keys(step.userNotes).length > 0) {
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.text('Notes:', margin + 10, yPosition);
+                        yPosition += lineHeight;
+                        
+                        pdf.setFont('helvetica', 'normal');
+                        for (const [key, content] of Object.entries(step.userNotes)) {
+                            if (content && content.trim()) {
+                                if (key !== 'Current') {
+                                    pdf.setFont('helvetica', 'bold');
+                                    pdf.text(`${key}:`, margin + 15, yPosition);
+                                    yPosition += lineHeight;
+                                }
+                                pdf.setFont('helvetica', 'normal');
+                                const noteLines = pdf.splitTextToSize(content, pageWidth - margin * 2 - 20);
+                                pdf.text(noteLines, margin + 15, yPosition);
+                                yPosition += noteLines.length * lineHeight;
+                            }
+                        }
+                    }
+                    
+                    yPosition += lineHeight; // Extra space between steps
+                });
+            }
+            
+            // Footer
+            const totalPages = pdf.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(`Generated by SMAX Upgrade Tool - Page ${i} of ${totalPages}`, margin, pageHeight - 10);
+                pdf.text(new Date().toLocaleString(), pageWidth - margin, pageHeight - 10, { align: 'right' });
+            }
+            
+            // Save the PDF
+            const filename = `${config.title.replace(/[^a-z0-9]/gi, '_')}_${currentStage ? currentStage.name : 'export'}.pdf`;
+            pdf.save(filename);
+            
+            console.log('[SMAX Tool] PDF exported successfully:', filename);
+            
+        } catch (e) {
+            console.error('[SMAX Tool] PDF export error:', e);
+            showError(`PDF export failed: ${e.message}`);
+        }
     }
 </script>
 </body>
