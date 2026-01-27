@@ -30,16 +30,7 @@ config:
 
 ### AutoUpgrade 
 
-
-#### Notes
-
-asda
-
 ### - [ ] Complete
-
-#### Notes
-
-asda
 
 ### - [ ] Complete
 
