@@ -15,32 +15,6 @@ config:
 
 ## Preparation
 
-### - [x] Complete
-
-Ensure all pods are in 2/2 or 1/1 Running state before starting.
-```bash
-kubectl get pods -n {{namespace}}
-
-### - [ ] Complete
-
-### Create Docker Registry Secret
-
-Create secret for pulling images from private registry.
-
-```bash
-kubectl get secret <image_secret_name> -n <ESM_NAMESPACE>
-```
-
-#### Notes
-
-Some notes about the registry secret creation.
-
-### - [x] Complete
-
-### asd
-
-### - [ ] Complete
-
 ## Upgrade
 
 ### Monitor Upgrade Progress
