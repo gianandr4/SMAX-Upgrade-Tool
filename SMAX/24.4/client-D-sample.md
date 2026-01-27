@@ -8,7 +8,7 @@ config:
   nfs_server: nfs.internal.com
   username: admin
   password: changeme
-  image_secret_name: regcred
+  image_secret_name: asda
 ---
 
 # Client A Upgrade to v24.4
