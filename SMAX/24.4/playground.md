@@ -6,11 +6,8 @@ config:
   installation_path: /opt/cdf
   omt_binaries_path: /
   CDF_HOME: /
+  username: ptadmin
   namespace: itsma-clienta
-  nfs_server: nfs.internal.com
-  username: admin
-  password: changeme
-  image_secret_name: regcred
 ---
 
 # Playground Upgrade to v24.4
