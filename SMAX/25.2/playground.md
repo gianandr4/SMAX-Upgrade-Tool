@@ -14,7 +14,9 @@ config:
 
 ## OMT Prerequisite tasks
 
-### asda
+### - [ ] Complete
+
+./autoUpgrade -n 192.0.2.0 -u <username>
 
 ### - [ ] Complete
 
