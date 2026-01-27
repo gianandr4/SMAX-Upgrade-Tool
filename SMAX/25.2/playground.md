@@ -7,10 +7,7 @@ config:
   omt_binaries_path: /
   CDF_HOME: /
   namespace: itsma-clienta
-  nfs_server: nfs.internal.com
   username: ptadmin
-  password: changeme
-  image_secret_name: regcred
 ---
 
 # {{client}} Upgrade to v24.4
