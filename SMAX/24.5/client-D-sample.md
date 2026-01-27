@@ -25,6 +25,8 @@ kubectl get pods -n {{namespace}}
 
 #### Notes
 
+dada
+
 ##### 24.4
 
 Current version notes here
