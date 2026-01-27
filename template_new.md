@@ -25,6 +25,8 @@ Review the official SMAX release notes for version 24.6 to understand new featur
 
 #### Notes
 
+#### Notes
+
 **Personal Notes:**
 
 ### - [ ] Complete
@@ -32,6 +34,8 @@ Review the official SMAX release notes for version 24.6 to understand new featur
 ### Schedule Maintenance Window
 
 Coordinate with stakeholders to schedule an appropriate maintenance window for the upgrade.
+
+#### Notes
 
 #### Notes
 
@@ -47,6 +51,8 @@ Ensure the infrastructure meets the minimum requirements for SMAX 24.6.
 kubectl get nodes
 kubectl describe nodes | grep -i resources
 ```
+
+#### Notes
 
 #### Notes
 
@@ -68,6 +74,8 @@ cd smax-24.6
 
 #### Notes
 
+#### Notes
+
 **Personal Notes:**
 
 ### - [ ] Complete
@@ -79,6 +87,8 @@ Verify the integrity of downloaded binaries using provided checksums.
 ```bash
 sha256sum -c checksums.txt
 ```
+
+#### Notes
 
 #### Notes
 
@@ -96,6 +106,8 @@ Upload the SMAX container images to your private registry.
 
 #### Notes
 
+#### Notes
+
 **Personal Notes:**
 
 ### - [ ] Complete
@@ -109,6 +121,8 @@ Create full backups of all SMAX PostgreSQL databases (BoB, SmartAnalytics, IdM).
 ```bash
 pg_dump -h <db_host> -U <db_user> <db_name> > <backup_location>/smax_backup_$(date +%Y%m%d_%H%M%S).sql
 ```
+
+#### Notes
 
 #### Notes
 
@@ -129,6 +143,8 @@ kubectl get configmaps -n <namespace> -o yaml > <backup_location>/configmaps-bac
 
 #### Notes
 
+#### Notes
+
 **Personal Notes:**
 
 ### - [ ] Complete
@@ -144,6 +160,8 @@ kubectl get pv
 
 #### Notes
 
+#### Notes
+
 **Personal Notes:**
 
 ### - [ ] Complete
@@ -151,6 +169,8 @@ kubectl get pv
 ### Document Current Configuration
 
 Document the current SMAX configuration including resource allocations, custom settings, and integrations.
+
+#### Notes
 
 #### Notes
 
@@ -171,6 +191,8 @@ kubectl get pods -n <namespace> | grep -v "Running\|Completed" | wc -l
 
 #### Notes
 
+#### Notes
+
 **Personal Notes:**
 
 ### - [ ] Complete
@@ -183,6 +205,8 @@ Ensure sufficient storage is available for the upgrade process.
 kubectl get pvc -n <namespace>
 df -h
 ```
+
+#### Notes
 
 #### Notes
 
@@ -201,6 +225,8 @@ kubectl top pods -n <namespace>
 
 #### Notes
 
+#### Notes
+
 **Personal Notes:**
 
 ### - [ ] Complete
@@ -214,11 +240,13 @@ kubectl run -it --rm debug --image=busybox --restart=Never -n <namespace> -- sh
 # Inside the pod: ping, nslookup, telnet tests
 ```
 
+### - [ ] Complete
+
 #### Notes
 
 **Personal Notes:**
 
-### - [ ] Complete
+
 
 ### Run Pre-Upgrade Checker
 
@@ -228,11 +256,13 @@ Execute the SMAX pre-upgrade validation tool if available.
 ./pre-upgrade-check.sh -n <namespace>
 ```
 
+### - [ ] Complete
+
 #### Notes
 
 **Personal Notes:**
 
-### - [ ] Complete
+
 
 ## Registry Configuration
 
@@ -250,11 +280,13 @@ kubectl create secret docker-registry <image_secret_name> \
 kubectl get secret <image_secret_name> -n <namespace>
 ```
 
+### - [ ] Complete
+
 #### Notes
 
 **Personal Notes:**
 
-### - [ ] Complete
+
 
 ### Verify Registry Access
 
@@ -685,6 +717,5 @@ Archive all upgrade-related documentation, logs, and scripts for future referenc
 #### Notes
 
 **Personal Notes:**
-
 
 

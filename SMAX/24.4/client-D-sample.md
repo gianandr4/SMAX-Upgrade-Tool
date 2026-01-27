@@ -25,8 +25,8 @@ kubectl get pods -n {{namespace}}
 
 #### Notes
 
-##### Current
 Current version notes here
+
 ##### 24.4
 Current version notes here
 
@@ -58,8 +58,8 @@ kubectl get pods -n <ESM_NAMESPACE> -w
 
 #### Notes
 
-##### Current
 Monitor the upgrade process carefully.
+
 ##### 24.3
 In previous versions, this step took longer.
 
@@ -87,8 +87,8 @@ Test basic functionality: login, create ticket, check reports.
 
 #### Notes
 
-##### Current
 Run the standard smoke test suite.
+
 ##### 24.4
 New features in 24.4 require additional testing.
 

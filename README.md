@@ -38,10 +38,12 @@ SMAX/
 
 ### Markdown Format Structure
 
-The tool uses a three-level hierarchy:
+The tool uses a three-level hierarchy with clear step boundaries:
 - **# (H1)** - Document title (e.g., "Client A Upgrade to v24.4")
 - **## (H2)** - Stages (e.g., "Preparation", "Upgrade", "Verification")
 - **### (H3)** - Steps (e.g., "Health Check", "Create Secret", etc.)
+- **### - [x] Complete** - Completed step marker
+- **### - [ ] Complete** - Incomplete step marker
 
 Example:
 ```markdown
@@ -63,7 +65,14 @@ Ensure all pods are running.
 kubectl get pods -n {{namespace}}
 \`\`\`
 
-- [ ] Step not completed
+#### Notes
+
+Current version notes here.
+
+##### 24.3
+Previous version notes here.
+
+### - [ ] Complete
 ```
 
 ### Legacy Files (Auto-Migrated)
