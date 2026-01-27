@@ -14,7 +14,7 @@ config:
   image_secret_name: regcred
 ---
 
-# <client> Upgrade to v24.4
+# {{client}} Upgrade to v24.4
 
 ## OMT Prerequisite tasks
 
