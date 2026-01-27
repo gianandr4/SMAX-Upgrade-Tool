@@ -18,9 +18,14 @@ config:
 
 ### Review Release Notes
 
+- [ ] Step not completed
+
+---
+
 ### Review Release Notes
 
 Review the official SMAX release notes to understand new features and changes.
+---
 
 - [ ] Step not completed
 
@@ -29,6 +34,7 @@ Review the official SMAX release notes to understand new features and changes.
 ### Schedule Maintenance Window
 
 Coordinate with stakeholders to schedule an appropriate maintenance window.
+---
 
 - [ ] Step not completed
 
@@ -39,6 +45,7 @@ Coordinate with stakeholders to schedule an appropriate maintenance window.
 ### Download SMAX Binaries
 
 Download the SMAX 24.4 installation binaries.
+---
 
 ```bash
 wget https://downloads.microfocus.com/smax/24.4/smax-24.4.tar.gz
@@ -52,6 +59,7 @@ tar -xzf smax-24.4.tar.gz
 ### Upload to Registry
 
 Upload images to the private registry.
+---
 
 ```bash
 ./upload-images.sh -r {{registry_server}} -u {{username}} -p {{password}}
@@ -64,6 +72,7 @@ Upload images to the private registry.
 ### Check System Resources
 
 Create full backups of all SMAX databases.
+---
 
 ```bash
 pg_dump -h {{nfs_server}} -U postgres bo_db > {{backup_location}}/smax_backup_$(date +%Y%m%d).sql
@@ -76,6 +85,7 @@ pg_dump -h {{nfs_server}} -U postgres bo_db > {{backup_location}}/smax_backup_$(
 ### Backup Kubernetes Configurations
 
 Export all Kubernetes configurations.
+---
 
 ```bash
 kubectl get all -n {{namespace}} -o yaml > {{backup_location}}/k8s-backup-$(date +%Y%m%d).yaml
@@ -90,6 +100,7 @@ kubectl get all -n {{namespace}} -o yaml > {{backup_location}}/k8s-backup-$(date
 ### SMAX Health Check
 
 Ensure all pods are running before starting.
+---
 
 ```bash
 kubectl get pods -n {{namespace}}
@@ -102,6 +113,7 @@ kubectl get pods -n {{namespace}}
 ### Verify Storage
 
 Ensure sufficient storage is available.
+---
 
 ```bash
 kubectl get pvc -n {{namespace}}
@@ -115,6 +127,7 @@ df -h
 ### Backup Current Configuration
 
 Review current CPU and memory utilization.
+---
 
 ```bash
 kubectl top nodes
@@ -130,6 +143,7 @@ kubectl top pods -n {{namespace}}
 ### Create Registry Secret
 
 Create secret for pulling images.
+---
 
 ```bash
 kubectl create secret docker-registry <image_secret_name> \
@@ -146,6 +160,7 @@ kubectl create secret docker-registry <image_secret_name> \
 ### Download Upgrade Package
 
 Test registry connectivity.
+---
 
 ```bash
 kubectl run test-registry --image=<registry_server>/smax/sample:24.4 -n {{namespace}}
@@ -161,6 +176,7 @@ kubectl delete pod test-registry -n {{namespace}}
 ### Enable Maintenance Mode
 
 Enable maintenance mode to prevent user access.
+---
 
 - [ ] Step not completed
 
@@ -169,6 +185,7 @@ Enable maintenance mode to prevent user access.
 ### Execute Upgrade Script
 
 Execute the main upgrade process.
+---
 
 ```bash
 ./upgrade.sh -n {{namespace}} -v {{version}}
@@ -181,6 +198,7 @@ Execute the main upgrade process.
 ### Monitor Pod Status
 
 Monitor the upgrade and watch for errors.
+---
 
 ```bash
 kubectl get pods -n {{namespace}} -w
@@ -195,6 +213,7 @@ kubectl get pods -n {{namespace}} -w
 ### Verify Version
 
 Confirm all components are running version 24.4.
+---
 
 ```bash
 kubectl get pods -n {{namespace}} -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\n"}{end}'
@@ -207,6 +226,7 @@ kubectl get pods -n {{namespace}} -o jsonpath='{range .items[*]}{.metadata.name}
 ### Health Check
 
 Ensure all pods are running.
+---
 
 ```bash
 kubectl get pods -n {{namespace}}
@@ -218,9 +238,14 @@ kubectl get pods -n {{namespace}}
 
 ### Functional Testing
 
+- [ ] Step not completed
+
+---
+
 ### Test User Authentication
 
 Verify login functionality.
+---
 
 - [ ] Step not completed
 
@@ -229,6 +254,7 @@ Verify login functionality.
 ### Create Test Incident
 
 Create a test incident to verify ITSM functionality.
+---
 
 - [ ] Step not completed
 
@@ -237,6 +263,7 @@ Create a test incident to verify ITSM functionality.
 ### Test Notifications
 
 Verify email notifications are working.
+---
 
 - [ ] Step not completed
 
@@ -245,6 +272,7 @@ Verify email notifications are working.
 ### Test Service Portal
 
 Access the Service Portal and verify all widgets load.
+---
 
 - [ ] Step not completed
 
@@ -253,6 +281,7 @@ Access the Service Portal and verify all widgets load.
 ### Test Reporting
 
 Run sample reports.
+---
 
 - [ ] Step not completed
 
@@ -263,6 +292,7 @@ Run sample reports.
 ### Review Resource Utilization
 
 Monitor resource usage post-upgrade.
+---
 
 ```bash
 kubectl top pods -n {{namespace}}
@@ -275,6 +305,7 @@ kubectl top pods -n {{namespace}}
 ### Optimize Database
 
 Run database maintenance tasks.
+---
 
 ```bash
 psql -h {{nfs_server}} -U postgres -d bo_db -c "VACUUM ANALYZE;"
@@ -289,6 +320,7 @@ psql -h {{nfs_server}} -U postgres -d bo_db -c "VACUUM ANALYZE;"
 ### Notify Stakeholders
 
 Inform stakeholders of successful upgrade completion.
+---
 
 - [ ] Step not completed
 
@@ -297,7 +329,9 @@ Inform stakeholders of successful upgrade completion.
 ### Disable Maintenance Mode
 
 Update internal documentation with new version info.
+---
 
 - [ ] Step not completed
 
 ---
+
