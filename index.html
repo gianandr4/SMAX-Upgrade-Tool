@@ -668,21 +668,7 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 continue;
             }
             
-            // Checkbox for done status
-            if (line.trim().startsWith('- [x]') || line.trim().startsWith('- [X]')) {
-                if (currentStep) {
-                    currentStep.done = true;
-                }
-                continue;
-            }
-            
-            if (line.trim().startsWith('- [ ]')) {
-                if (currentStep) {
-                    currentStep.done = false;
-                }
-                continue;
-            }
-            
+
             // H4 = Notes section
             if (line.startsWith('#### ')) {
                 const sectionTitle = line.substring(5).trim();
@@ -715,9 +701,32 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
             
             // Collect notes content
             if (collectingNotes && currentStep) {
-                // Check if we've reached the next H3, H2, or H1 (end of notes section)
-                if (line.startsWith('### ') || line.startsWith('## ') || line.startsWith('# ')) {
-                    // Save any remaining content
+                // Check if we've reached the completion marker or next step/stage
+                if (line.startsWith('### ')) {
+                    const title = line.substring(4).trim();
+                    if (title === '- [x] Complete' || title === '- [X] Complete' || title === '- [ ] Complete') {
+                        // Save any remaining content
+                        if (currentSubsection && subsectionBuffer.length > 0) {
+                            currentStep.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
+                        } else if (!currentSubsection && notesBuffer.length > 0) {
+                            currentStep.userNotes['Current'] = notesBuffer.join('\n').trim();
+                        }
+                        collectingNotes = false;
+                        collectingSubsection = false;
+                        // Don't continue here - let the completion marker be processed
+                    } else {
+                        // This is a new step, end notes
+                        if (currentSubsection && subsectionBuffer.length > 0) {
+                            currentStep.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
+                        } else if (!currentSubsection && notesBuffer.length > 0) {
+                            currentStep.userNotes['Current'] = notesBuffer.join('\n').trim();
+                        }
+                        collectingNotes = false;
+                        collectingSubsection = false;
+                        // Don't continue here - let the header be processed normally
+                    }
+                } else if (line.startsWith('## ') || line.startsWith('# ')) {
+                    // End of notes section
                     if (currentSubsection && subsectionBuffer.length > 0) {
                         currentStep.userNotes[currentSubsection] = subsectionBuffer.join('\n').trim();
                     } else if (!currentSubsection && notesBuffer.length > 0) {
@@ -739,35 +748,65 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                 }
             }
             
-            // H3 = New Step
+            // H3 = New Step or Completion Marker
             if (line.startsWith('### ')) {
-                if (currentStep && currentStage) {
-                    currentStep.rawMd = rawBuffer.join('\n');
-                    currentStage.steps.push(currentStep);
-                }
-                
                 const title = line.substring(4).trim();
-                currentStep = {
-                    id: title.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
-                    title: title,
-                    notes: '',
-                    command: '',
-                    done: false,
-                    userNotes: {} // Changed from string to object
-                };
-                collectingCommand = false;
-                collectingNotes = false;
-                collectingSubsection = false;
-                commandBuffer = [];
-                notesBuffer = [];
-                subsectionBuffer = [];
-                currentSubsection = '';
-                rawBuffer = [line]; // Start collecting raw for this step
-                continue;
+                
+                // Check if this is a completion marker
+                if (title === '- [x] Complete' || title === '- [X] Complete') {
+                    if (currentStep) {
+                        currentStep.done = true;
+                        currentStep.rawMd = rawBuffer.join('\n');
+                        currentStage.steps.push(currentStep);
+                    }
+                    currentStep = null;
+                    collectingCommand = false;
+                    collectingNotes = false;
+                    collectingSubsection = false;
+                    rawBuffer = [];
+                    continue;
+                } else if (title === '- [ ] Complete') {
+                    if (currentStep) {
+                        currentStep.done = false;
+                        currentStep.rawMd = rawBuffer.join('\n');
+                        currentStage.steps.push(currentStep);
+                    }
+                    currentStep = null;
+                    collectingCommand = false;
+                    collectingNotes = false;
+                    collectingSubsection = false;
+                    rawBuffer = [];
+                    continue;
+                } else {
+                    // This is a regular step title
+                    if (currentStep && currentStage) {
+                        currentStep.rawMd = rawBuffer.join('\n');
+                        currentStage.steps.push(currentStep);
+                    }
+                    
+                    currentStep = {
+                        id: title.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+                        title: title,
+                        notes: '',
+                        command: '',
+                        done: false,
+                        userNotes: {} // Changed from string to object
+                    };
+                    collectingCommand = false;
+                    collectingNotes = false;
+                    collectingSubsection = false;
+                    commandBuffer = [];
+                    notesBuffer = [];
+                    subsectionBuffer = [];
+                    currentSubsection = '';
+                    rawBuffer = [line]; // Start collecting raw for this step
+                    continue;
+                }
             }
             
             // Regular content (step description/notes)
             if (currentStep && line.trim() !== '' && !collectingCommand && !collectingNotes) {
+                if (line.trim() === '---') continue; // Skip separator lines
                 if (currentStep.notes) {
                     currentStep.notes += '\n' + line.trim();
                 } else {
@@ -1864,14 +1903,13 @@ let GITHUB_TOKEN = sessionStorage.getItem('github_token') || "";
                     md += '```\n\n';
                 }
                 
-                // Checkbox for completion status
-                md += step.done ? '- [x] Step completed\n' : '- [ ] Step not completed\n';
-                
                 if (step.userNotes && Object.keys(step.userNotes).length > 0) {
-                    md += '\n' + userNotesToMarkdown(step.userNotes) + '\n';
+                    md += userNotesToMarkdown(step.userNotes) + '\n\n';
                 }
                 
-                md += '\n---\n\n';
+                // Completion marker as separate section
+                md += step.done ? '### - [x] Complete\n\n' : '### - [ ] Complete\n\n';
+                
             });
         });
         
