@@ -8,7 +8,7 @@ config:
   CDF_HOME: /
   namespace: itsma-clienta
   nfs_server: nfs.internal.com
-  username: admin
+  username: ptadmin
   password: changeme
   image_secret_name: regcred
 ---
