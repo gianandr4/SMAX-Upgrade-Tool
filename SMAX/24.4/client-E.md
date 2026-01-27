@@ -18,19 +18,10 @@ config:
 
 ### Review Release Notes
 
+- [ ] Step not completed
 ---
 
 - [ ] Step not completed
-
-#### Notes
-
-##### Current
-
-244
-
-##### 24.3
-
-243
 
 ---
 
