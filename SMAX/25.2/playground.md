@@ -14,13 +14,11 @@ config:
 
 ## OMT Prerequisite tasks
 
-### SMAX Health Check
-
-Ensure all pods are in 2/2 or 1/1 Running state before starting.
-
-```bash
-kubectl get pods -n {{namespace}}
-```
-
 ### - [x] Complete
+
+If you'll perform an automated upgrade of OMT as a regular user, for example, you can run ./autoUpgrade -n 192.0.2.0 -u <username>.
+```bash
+./autoUpgrade -n 192.0.2.0 -u <username>
+
+### - [ ] Complete
 
