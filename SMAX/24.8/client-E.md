@@ -16,19 +16,20 @@ config:
 
 ## Pre-Flight Checks
 
-### Review Release Notes
+### Schedule Maintenance Window
+
+- [ ] Step not completed
 
 - [ ] Step not completed
 
 #### Notes
-
-##### 243
 
 243
 
 ##### 24.7
 
 244
+---
 ### Schedule Maintenance Window
 
 Review the official SMAX release notes to understand new features and changes.
