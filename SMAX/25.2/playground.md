@@ -22,6 +22,7 @@ config:
   username: admin
   password: changeme
   image_secret_name: regcred
+- [ ] Down smax 
 
 ### - [ ] Complete
 
