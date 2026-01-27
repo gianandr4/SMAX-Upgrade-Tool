@@ -16,6 +16,26 @@ config:
 
 ### Snapshots
 
+Down smax 
+
+Down core 
+
+Kubestop.sh 
+
+Οταν κατεβει το cluster – shutdown 
+
+Suspend ucmdb machines 
+
+Snapshots (No memory) 
+
+Turn on 
+
+Up core 
+
+Up smax 
+
+Kube-start.sh on workers 
+
 ### - [ ] Complete
 
 ### AutoUpgrade 
