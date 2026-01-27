@@ -16,15 +16,16 @@ config:
 
 ### Snapshots
 
-  CDF_HOME: /
-  namespace: itsma-clienta
-  nfs_server: nfs.internal.com
-  username: admin
-  password: changeme
-  image_secret_name: regcred
+
 - [ ] Down smax
 
 ### AutoUpgrade 
+
+### - [ ] Complete
+
+### AutoUpgrade 
+
+### - [ ] Complete
 
 ### - [ ] Complete
 
