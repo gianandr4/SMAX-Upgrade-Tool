@@ -32,7 +32,7 @@ Current version notes here
 
 244
 
-### - [x] Complete
+### - [ ] Complete
 
 ### Create Docker Registry Secret
 
