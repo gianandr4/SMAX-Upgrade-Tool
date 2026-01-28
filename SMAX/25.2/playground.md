@@ -19,8 +19,7 @@ asdada
 - [ ] Down smax 
 - [ ] Down core 
 - [ ] Kubestop.sh 
-ÃÂÃÂ±ÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂ- [ ] Suspend ucmdb machines 
-- [ ] Snapshots (No memory) 
+ασδα- [ ] Snapshots (No memory) 
 - [ ] Turn on 
 - [ ] Up core 
 - [ ] Up smax 
