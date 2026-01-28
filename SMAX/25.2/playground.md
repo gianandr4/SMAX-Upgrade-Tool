@@ -24,6 +24,11 @@ asdada
 - [ ] Up core 
 - [ ] Up smax 
 - [ ] Kube-start.sh on workers 
+
+#### Notes
+
+Asda
+
 ### - [ ] Complete
 
 ## asda
