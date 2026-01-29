@@ -57,6 +57,10 @@ config:
 
 ### Review Release Notes
 
+### Review Release Notes
+
+### Review Release Notes
+
 Review the official SMAX release notes to understand new features and changes.
 ---
 ---
@@ -78,6 +82,10 @@ Review the official SMAX release notes to understand new features and changes.
 
 ### Schedule Maintenance Window
 
+### Schedule Maintenance Window
+
+### Schedule Maintenance Window
+
 Coordinate with stakeholders to schedule an appropriate maintenance window.
 ---
 ---
@@ -94,6 +102,7 @@ Coordinate with stakeholders to schedule an appropriate maintenance window.
 - [ ] Step not completed
 
 ---
+
 
 
 ## Binaries Download
@@ -126,6 +135,10 @@ tar -xzf smax-24.4.tar.gz
 
 ### Upload to Registry
 
+### Upload to Registry
+
+### Upload to Registry
+
 Upload images to the private registry.
 ---
 ---
@@ -146,6 +159,10 @@ Upload images to the private registry.
 - [ ] Step not completed
 
 ---
+
+### Check System Resources
+
+### Check System Resources
 
 ### Check System Resources
 
@@ -176,6 +193,10 @@ pg_dump -h {{nfs_server}} -U postgres bo_db > {{backup_location}}/smax_backup_$(
 
 ### Backup Kubernetes Configurations
 
+### Backup Kubernetes Configurations
+
+### Backup Kubernetes Configurations
+
 Export all Kubernetes configurations.
 ---
 ---
@@ -196,6 +217,7 @@ kubectl get all -n {{namespace}} -o yaml > {{backup_location}}/k8s-backup-$(date
 - [ ] Step not completed
 
 ---
+
 
 
 ## Pre-Upgrade Validation
@@ -227,6 +249,10 @@ kubectl get pods -n {{namespace}}
 
 ### Verify Storage
 
+### Verify Storage
+
+### Verify Storage
+
 Ensure sufficient storage is available.
 ---
 ---
@@ -253,6 +279,10 @@ df -h
 
 ### Backup Current Configuration
 
+### Backup Current Configuration
+
+### Backup Current Configuration
+
 Review current CPU and memory utilization.
 ---
 ---
@@ -274,6 +304,7 @@ kubectl top pods -n {{namespace}}
 - [ ] Step not completed
 
 ---
+
 
 
 ## Environment Preparation
@@ -309,6 +340,10 @@ kubectl create secret docker-registry <image_secret_name> \
 
 ### Download Upgrade Package
 
+### Download Upgrade Package
+
+### Download Upgrade Package
+
 Test registry connectivity.
 ---
 ---
@@ -332,6 +367,7 @@ kubectl delete pod test-registry -n {{namespace}}
 ---
 
 
+
 ## Upgrade Execution
 
 ### Enable Maintenance Mode
@@ -352,6 +388,10 @@ Enable maintenance mode to prevent user access.
 - [ ] Step not completed
 
 ---
+
+### Execute Upgrade Script
+
+### Execute Upgrade Script
 
 ### Execute Upgrade Script
 
@@ -382,6 +422,10 @@ Execute the main upgrade process.
 
 ### Monitor Pod Status
 
+### Monitor Pod Status
+
+### Monitor Pod Status
+
 Monitor the upgrade and watch for errors.
 ---
 ---
@@ -402,6 +446,7 @@ kubectl get pods -n {{namespace}} -w
 - [ ] Step not completed
 
 ---
+
 
 
 ## Post-Upgrade Validation
@@ -433,6 +478,10 @@ kubectl get pods -n {{namespace}} -o jsonpath='{range .items[*]}{.metadata.name}
 
 ### Health Check
 
+### Health Check
+
+### Health Check
+
 Ensure all pods are running.
 ---
 ---
@@ -458,6 +507,10 @@ kubectl get pods -n {{namespace}}
 
 ### Functional Testing
 
+### Functional Testing
+
+### Functional Testing
+
 ---
 ---
 ---
@@ -472,6 +525,10 @@ kubectl get pods -n {{namespace}}
 - [ ] Step not completed
 
 ---
+
+### Test User Authentication
+
+### Test User Authentication
 
 ### Test User Authentication
 
@@ -498,6 +555,10 @@ Verify login functionality.
 
 ### Create Test Incident
 
+### Create Test Incident
+
+### Create Test Incident
+
 Create a test incident to verify ITSM functionality.
 ---
 ---
@@ -514,6 +575,10 @@ Create a test incident to verify ITSM functionality.
 - [ ] Step not completed
 
 ---
+
+### Test Notifications
+
+### Test Notifications
 
 ### Test Notifications
 
@@ -540,6 +605,10 @@ Verify email notifications are working.
 
 ### Test Service Portal
 
+### Test Service Portal
+
+### Test Service Portal
+
 Access the Service Portal and verify all widgets load.
 ---
 ---
@@ -561,6 +630,10 @@ Access the Service Portal and verify all widgets load.
 
 ### Test Reporting
 
+### Test Reporting
+
+### Test Reporting
+
 Run sample reports.
 ---
 ---
@@ -577,6 +650,7 @@ Run sample reports.
 - [ ] Step not completed
 
 ---
+
 
 
 ## Post-Upgrade Optimization
@@ -608,6 +682,10 @@ kubectl top pods -n {{namespace}}
 
 ### Optimize Database
 
+### Optimize Database
+
+### Optimize Database
+
 Run database maintenance tasks.
 ---
 ---
@@ -628,6 +706,7 @@ psql -h {{nfs_server}} -U postgres -d bo_db -c "VACUUM ANALYZE;"
 - [ ] Step not completed
 
 ---
+
 
 
 ## Finalization
@@ -655,6 +734,10 @@ Inform stakeholders of successful upgrade completion.
 
 ### Disable Maintenance Mode
 
+### Disable Maintenance Mode
+
+### Disable Maintenance Mode
+
 Update internal documentation with new version info.
 ---
 ---
@@ -671,6 +754,8 @@ Update internal documentation with new version info.
 - [ ] Step not completed
 
 ---
+
+
 
 
 
