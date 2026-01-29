@@ -38,9 +38,11 @@ Current version notes here
 ### Create Docker Registry Secret
 
 Create secret for pulling images from private registry.
+
 ```
 asda
 ```
+
 ```bash
 kubectl get secret <image_secret_name> -n <ESM_NAMESPACE>
 ```
@@ -53,6 +55,8 @@ kubectl get secret <image_secret_name> -n <ESM_NAMESPACE>
 Some notes about the registry secret creation.
 
 ### - [ ] Complete
+
+
 
 ## Upgrade
 
