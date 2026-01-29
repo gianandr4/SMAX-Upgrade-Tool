@@ -27,7 +27,7 @@ asdada
 - [ ] Kube-start.sh on workers 
 
 ```bash
-asda
+asda/<omt_binaries_path>
 ```
 
 ```bash
