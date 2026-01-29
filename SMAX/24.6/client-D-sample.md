@@ -15,26 +15,6 @@ config:
 
 ## Preparation
 
-## Preparation
-
-## Preparation
-
-## Preparation
-
-## Preparation
-
-## Preparation
-
-## Preparation
-
-## Preparation
-
-## Preparation
-
-## Preparation
-
-## Preparation
-
 ### SMAX Health Check
 
 Ensure all pods are in 2/2 or 1/1 Running state before starting.
@@ -74,6 +54,7 @@ Some notes about the registry secret creation.
 ### asda
 
 asda
+
 
 
 
