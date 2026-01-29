@@ -50,26 +50,6 @@ Some notes about the registry secret creation.
 
 ### - [ ] Complete
 
-### asda
-
-### - [ ] Complete
-
-### asda
-
-### - [ ] Complete
-
-### asda
-
-### - [ ] Complete
-
-### asda
-
-#### Notes
-
-
-
-### - [ ] Complete
-
 ## Upgrade
 
 ### Monitor Upgrade Progress
