@@ -22,7 +22,6 @@ Ensure all pods are in 2/2 or 1/1 Running state before starting.
 ```bash
 kubectl get pods -n {{namespace}}
 ```
-```asda```
 
 #### Notes
 
@@ -55,8 +54,6 @@ kubectl get secret <image_secret_name> -n <ESM_NAMESPACE>
 Some notes about the registry secret creation.
 
 ### - [ ] Complete
-
-
 
 ## Upgrade
 
