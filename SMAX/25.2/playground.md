@@ -5,7 +5,7 @@ config:
   version: '24.4'
   installation_path: /opt/cdf
   omt_binaries_path: /home/omtbinaa
-  CDF_HOME: /
+  CDF_HOME: /opt/cdf
   namespace: itsma-clienta
   username: ptadmin
 ---
