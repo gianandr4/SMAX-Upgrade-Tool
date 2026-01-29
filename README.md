@@ -76,12 +76,6 @@ Previous version notes here.
 ### - [ ] Complete
 ```
 
-### Legacy Files (Auto-Migrated)
-Old YAML format files are automatically converted to Markdown on first load:
-- `client-X.yaml` - Converted to `client-X.md`
-- `client-X-managed-steps.yaml` / `client-X-embedded-steps.yaml` - Old step definitions
-- `state-client-X.yaml` - Old state files (automatically merged)
-
 ## Usage
 
 1. **Open Tool**: Navigate to https://gianandr4.github.io/SMAX-Upgrade-Tool/ or host locally

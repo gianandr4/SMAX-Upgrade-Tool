@@ -141,12 +141,6 @@
         .note-preview ul, .note-preview ol { padding-left: 25px; }
         .note-preview blockquote { border-left: 4px solid var(--border); padding-left: 15px; color: #586069; margin: 10px 0; }
         
-        /* Step content styling */
-        .step-content pre { background: #1b1f23; color: #e1e4e8; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: ui-monospace, monospace; font-size: 13px; position: relative; }
-        .step-content code { background: #1b1f23; color: #e1e4e8; padding: 2px 6px; border-radius: 3px; font-family: ui-monospace, monospace; }
-        .step-content pre code { background: none; padding: 0; }
-        .interpolated-value { color: #e74c3c; font-weight: bold; }
-        
         /* Reset Button */
         .reset-btn { background: #d73a49; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
         .reset-btn:hover { background: #cb2431; }
@@ -322,42 +316,6 @@
             border-top: 1px solid var(--border) !important;
         }
     </style>
-    <script>
-        // Configure marked.js for proper code block rendering
-        const renderer = new marked.Renderer();
-        
-        // Handle fenced code blocks
-        renderer.code = function(code, language, escaped) {
-            // Handle both string and object inputs (marked.js can pass objects in some versions)
-            let codeStr = '';
-            if (typeof code === 'string') {
-                codeStr = code;
-            } else if (typeof code === 'object' && code !== null) {
-                // Try to extract text from object (marked.js token object)
-                codeStr = code.text || code.raw || String(code);
-            } else {
-                codeStr = String(code || '');
-            }
-            
-            const lang = language || 'text';
-            let highlighted = codeStr;
-            if (typeof Prism !== 'undefined' && Prism.languages[lang]) {
-                highlighted = Prism.highlight(codeStr, Prism.languages[lang], lang);
-            }
-            return `<pre class="language-${lang}"><code class="language-${lang}">${highlighted}</code></pre>`;
-        };
-        
-        // Handle inline code
-        renderer.codespan = function(code) {
-            return `<code>${code}</code>`;
-        };
-
-        marked.setOptions({
-            breaks: true,
-            gfm: true,
-            renderer: renderer
-        });
-    </script>
 </head>
 <body>
 
@@ -582,7 +540,11 @@ function toggleEditorPreview() {
         const content = codeMirrorEditor ? codeMirrorEditor.getValue() : textarea.value;
         if (currentEditorConfig.mode === 'markdown') {
             preview.innerHTML = marked.parse(content);
-            // Syntax highlighting is now handled by marked.js highlight function
+            // Apply syntax highlighting to code blocks if enabled
+            if (syntaxHighlightingEnabled && typeof Prism !== 'undefined') {
+                console.log('Applying Prism highlighting...');
+                setTimeout(() => Prism.highlightAll(), 10);
+            }
         } else {
             preview.textContent = content;
         }
@@ -670,7 +632,10 @@ function toggleSyntaxHighlighting() {
     const textarea = document.getElementById('unifiedEditorContent');
     if (preview.style.display !== 'none' && currentEditorConfig && currentEditorConfig.mode === 'markdown') {
         const content = codeMirrorEditor ? codeMirrorEditor.getValue() : textarea.value;
-        // Syntax highlighting is now handled by marked.js highlight function
+        preview.innerHTML = marked.parse(content);
+        if (syntaxHighlightingEnabled && typeof Prism !== 'undefined') {
+            setTimeout(() => Prism.highlightAll(), 10);
+        }
     }
 }
 
@@ -1119,8 +1084,6 @@ async function initializeApp() {
     // ## = Stages
     // ### = Steps
     function parseMarkdownStages(markdown) {
-        console.log('[SMAX Tool] parseMarkdownStages called with markdown length:', markdown.length);
-        console.log('[SMAX Tool] First 500 chars of markdown:', markdown.substring(0, 500));
         const stages = [];
         const lines = markdown.split('\n');
         
@@ -1172,8 +1135,27 @@ async function initializeApp() {
                 rawBuffer.push(line);
             }
             
-            // Code block handling - only skip when extracting commands, otherwise include in content
-            // (This was previously skipping all code blocks, but they should be part of step content)
+            // Code block start/end
+            if (line.trim().startsWith('```')) {
+                if (collectingCommand) {
+                    // End of command block
+                    if (currentStep) {
+                        currentStep.command = commandBuffer.join('\n').trim();
+                    }
+                    collectingCommand = false;
+                    commandBuffer = [];
+                } else {
+                    // Start of command block
+                    collectingCommand = true;
+                }
+                continue;
+            }
+            
+            // Inside command block
+            if (collectingCommand) {
+                commandBuffer.push(line);
+                continue;
+            }
             
             // H4 = Notes section
             if (line.startsWith('#### ')) {
@@ -1300,7 +1282,6 @@ async function initializeApp() {
                         done: false,
                         userNotes: {} // Changed from string to object
                     };
-                    console.log('[SMAX Tool] Created step with title:', title);
                     collectingCommand = false;
                     collectingNotes = false;
                     collectingSubsection = false;
@@ -1441,7 +1422,6 @@ async function initializeApp() {
             
             console.log(`[SMAX Tool] Loaded title: "${title}", ${stages.length} stage(s) from markdown`);
             console.log('[SMAX Tool] Loaded config:', config);
-            console.log('[SMAX Tool] First stage steps:', stages[0]?.steps?.length || 0);
             
             if (GITHUB_TOKEN) {
                 document.getElementById('syncInd').classList.add('online');
@@ -1752,44 +1732,22 @@ async function initializeApp() {
         
         Object.entries(config.config).forEach(([key, defaultVal]) => {
             const wrapper = document.createElement('div');
-            wrapper.style.display = 'flex';
-            wrapper.style.alignItems = 'center';
-            wrapper.style.gap = '8px';
-            wrapper.style.marginBottom = '8px';
             
             // Create label
             const label = document.createElement('label');
             label.style.fontSize = '14px';
             label.style.color = 'var(--text)';
             label.style.opacity = '0.7';
-            label.style.minWidth = '120px';
-            label.style.flexShrink = '0';
-            label.style.cursor = 'pointer';
-            label.style.userSelect = 'none';
-            label.textContent = key + ':';
-            label.title = 'Click to copy value';
-            label.onclick = function() {
-                const input = document.getElementById(`var_${key}`);
-                if (input) {
-                    copyToClipboard(input.value);
-                    // Visual feedback
-                    const originalText = label.textContent;
-                    label.textContent = '📋 Copied!';
-                    label.style.color = 'var(--primary)';
-                    setTimeout(() => {
-                        label.textContent = originalText;
-                        label.style.color = 'var(--text)';
-                        label.style.opacity = '0.7';
-                    }, 1000);
-                }
-            };
+            label.style.display = 'block';
+            label.style.marginBottom = '4px';
+            label.textContent = key;
             
             // Create input
             const input = document.createElement('input');
             input.type = 'text';
             input.id = `var_${key}`;
             input.value = defaultVal;
-            input.style.flex = '1';
+            input.style.width = '100%';
             input.style.boxSizing = 'border-box';
             input.onchange = function() {
                 config.config[key] = this.value;
@@ -1966,28 +1924,22 @@ async function initializeApp() {
         let result = str;
         Object.keys(config.config || {}).forEach(key => {
             const val = config.config[key] || '';
-            const styledVal = `<span class="interpolated-value">${val}</span>`;
             // Replace {{key}} format
-            result = result.replace(new RegExp(`{{${key}}}`, 'g'), styledVal);
+            result = result.replace(new RegExp(`{{${key}}`, 'g'), val);
             // Replace <key> format (case-insensitive)
-            result = result.replace(new RegExp(`<${key}>`, 'gi'), styledVal);
+            result = result.replace(new RegExp(`<${key}>`, 'gi'), val);
             // Also try uppercase version for <KEY> format
             const upperKey = key.toUpperCase();
-            result = result.replace(new RegExp(`<${upperKey}>`, 'g'), styledVal);
-            // Handle HTML-encoded versions (&lt;key&gt;)
-            result = result.replace(new RegExp(`&lt;${key}&gt;`, 'gi'), styledVal);
-            result = result.replace(new RegExp(`&lt;${upperKey}&gt;`, 'g'), styledVal);
+            result = result.replace(new RegExp(`<${upperKey}>`, 'g'), val);
         });
         return result;
     }
 
     // Render steps with checkboxes, inline editing, and minimal notes UI
     function renderSteps(steps, stageIndex) {
-        console.log('[SMAX Tool] renderSteps called with', steps ? steps.length : 0, 'steps for stage', stageIndex);
+        console.log('[SMAX Tool] renderSteps called with', steps ? steps.length : 0, 'steps');
         const stepsList = document.getElementById('steps-list');
-        console.log('[SMAX Tool] stepsList element:', stepsList);
         stepsList.innerHTML = '';
-        console.log('[SMAX Tool] stepsList cleared');
         
         if (!steps || steps.length === 0) {
             stepsList.innerHTML = '<p style="color:#586069;">No steps in this stage.</p>';
@@ -1998,7 +1950,6 @@ async function initializeApp() {
         document.getElementById('add-step-container').style.display = 'block';
         
         steps.forEach((step, stepIndex) => {
-            console.log(`[SMAX Tool] Rendering step ${stepIndex}:`, step.title, 'notes length:', step.notes ? step.notes.length : 0);
             const isDone = step.done || false;
             const card = document.createElement('div');
             card.className = `card ${isDone ? 'step-done' : ''}`;
@@ -2063,78 +2014,43 @@ async function initializeApp() {
             header.appendChild(rightSection);
             card.appendChild(header);
             
-            // Create combined markdown content for the step (notes and command only)
-            let stepMarkdown = '';
-
-            // Add notes content, but strip any leading H3 header that matches the step title
+            // Add default notes if present (editable)
             if (step.notes) {
-                let notesContent = step.notes.trim();
-                // Remove leading H3 header if it matches the step title
-                const h3Pattern = new RegExp(`^### ${step.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n`, 'm');
-                notesContent = notesContent.replace(h3Pattern, '');
-                // Interpolate variables in the step content
-                notesContent = interpolate(notesContent);
-                stepMarkdown += `${notesContent}\n\n`;
-            }
-
-            // Add command as code block if present
-            if (step.command) {
-                const interpolatedCommand = interpolate(step.command);
-                stepMarkdown += `\`\`\`bash\n${interpolatedCommand}\n\`\`\`\n\n`;
-            }
-
-            // Render the combined markdown content
-            if (stepMarkdown.trim()) {
-                console.log(`[SMAX Tool] Step ${stepIndex} rendering markdown:`, stepMarkdown.trim().substring(0, 200) + '...');
-                const contentDiv = document.createElement('div');
-                contentDiv.className = 'step-content';
-                contentDiv.style.color = 'var(--text)';
-                contentDiv.style.marginBottom = '12px';
-                const parsedHTML = marked.parse(stepMarkdown.trim());
-                console.log(`[SMAX Tool] Step ${stepIndex} parsed HTML length:`, parsedHTML.length);
-                // Interpolate variables in the parsed HTML
-                const interpolatedHTML = interpolate(parsedHTML);
-                console.log(`[SMAX Tool] Step ${stepIndex} interpolated HTML:`, interpolatedHTML.substring(0, 300));
-                contentDiv.innerHTML = interpolatedHTML;
-                
-                // Add copy buttons to all code blocks
-                const preElements = Array.from(contentDiv.querySelectorAll('pre'));
-                console.log(`[SMAX Tool] Step ${stepIndex} found ${preElements.length} code blocks`);
-                preElements.forEach((pre, index) => {
-                    // Create wrapper for pre and button
-                    const wrapper = document.createElement('div');
-                    wrapper.style.position = 'relative';
-                    wrapper.style.marginBottom = '10px';
-                    
-                    // Replace pre with wrapper
-                    pre.parentNode.replaceChild(wrapper, pre);
-                    wrapper.appendChild(pre);
-                    
-                    // Add copy button
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'copy-btn';
-                    copyBtn.textContent = 'Copy';
-                    copyBtn.style.position = 'absolute';
-                    copyBtn.style.top = '8px';
-                    copyBtn.style.right = '8px';
-                    copyBtn.style.zIndex = '10';
-                    copyBtn.onclick = function(e) {
-                        e.stopPropagation();
-                        const code = pre.querySelector('code');
-                        if (code) {
-                            copyToClipboard(code.textContent);
-                        }
-                    };
-                    wrapper.appendChild(copyBtn);
-                });
-                
-                card.appendChild(contentDiv);
-                console.log(`[SMAX Tool] Step ${stepIndex} contentDiv added to card`);
-            } else {
-                console.log(`[SMAX Tool] Step ${stepIndex} has no markdown content to render`);
+                const notesDiv = document.createElement('div');
+                notesDiv.className = 'editable';
+                notesDiv.style.color = 'white';
+                notesDiv.style.margin = '8px 0';
+                notesDiv.style.fontStyle = 'italic';
+                notesDiv.style.cursor = 'pointer';
+                notesDiv.textContent = step.notes;
+                card.appendChild(notesDiv);
             }
             
-            // Syntax highlighting is now handled by marked.js highlight function
+            // Add command with copy and edit buttons
+            if (step.command) {
+                const interpolatedCommand = interpolate(step.command);
+                const commandContainer = document.createElement('div');
+                commandContainer.style.position = 'relative';
+                commandContainer.style.marginTop = '12px';
+                
+                const pre = document.createElement('pre');
+                pre.style.position = 'relative';
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = 'Copy';
+                copyBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    copyToClipboard(interpolatedCommand);
+                };
+                
+                const commandText = document.createTextNode(interpolatedCommand);
+                
+                pre.appendChild(copyBtn);
+                pre.appendChild(commandText);
+                commandContainer.appendChild(pre);
+                card.appendChild(commandContainer);
+            }
             
             // Collapsible note section - shows preview by default
             const noteEditor = document.createElement('div');
@@ -2291,7 +2207,6 @@ async function initializeApp() {
             noteEditor.appendChild(noteButtons);
             
             card.appendChild(noteEditor);
-            console.log(`[SMAX Tool] Step ${stepIndex} card completed, appending to stepsList`);
             stepsList.appendChild(card);
         });
     }
@@ -2463,16 +2378,13 @@ async function initializeApp() {
         const card = document.getElementById('env-vars-card');
         const btn = document.getElementById('envToggleBtn');
         card.classList.toggle('open');
-        const isOpen = card.classList.contains('open');
-        if (isOpen) {
+        if (card.classList.contains('open')) {
             card.style.display = 'block';
             btn.textContent = '⚙️ Hide Variables';
         } else {
             setTimeout(() => card.style.display = 'none', 300); // Hide after animation
             btn.textContent = '⚙️ Variables';
         }
-        // Save state to localStorage
-        localStorage.setItem('envVarsOpen', isOpen);
     }
     
     function closeEnvVars() {
@@ -2512,16 +2424,13 @@ async function initializeApp() {
     function toggleClientMenu() {
         const card = document.getElementById('client-menu-card');
         const btn = document.getElementById('menuToggleBtn');
-        const isOpen = card.style.display === 'none' || card.style.display === '';
-        if (isOpen) {
+        if (card.style.display === 'none' || card.style.display === '') {
             card.style.display = 'block';
             btn.textContent = '📁 Hide Menu';
         } else {
             card.style.display = 'none';
             btn.textContent = '📁 Menu';
         }
-        // Save state to localStorage
-        localStorage.setItem('clientMenuOpen', isOpen);
     }
     
     function closeClientMenu() {
@@ -2535,16 +2444,6 @@ async function initializeApp() {
     // Render client menu
     function renderClientMenu() {
         const content = document.getElementById('client-menu-content');
-        
-        // Preserve current expansion states before re-rendering
-        const expandedVersions = new Set();
-        Object.keys(menuData).forEach(version => {
-            const submenu = document.getElementById(`submenu_${version}`);
-            if (submenu && submenu.style.display === 'block') {
-                expandedVersions.add(version);
-            }
-        });
-        
         content.innerHTML = '';
         
         const currentVersion = document.getElementById('selVer').value;
@@ -2568,8 +2467,7 @@ async function initializeApp() {
                 clientList.appendChild(clientDiv);
             });
             
-            // Show if it's the current version OR was previously expanded
-            if (version === currentVersion || expandedVersions.has(version)) {
+            if (version === currentVersion) {
                 clientList.style.display = 'block';
             }
             
@@ -2585,11 +2483,13 @@ async function initializeApp() {
             await fetchClients(version);
         }
         
-        // Toggle behavior: expand/collapse clicked version without affecting others
-        const submenu = document.getElementById(`submenu_${version}`);
-        if (submenu) {
-            submenu.style.display = submenu.style.display === 'none' ? 'block' : 'none';
-        }
+        // Accordion behavior: expand clicked, collapse others
+        Object.keys(menuData).forEach(v => {
+            const submenu = document.getElementById(`submenu_${v}`);
+            if (submenu) {
+                submenu.style.display = v === version ? 'block' : 'none';
+            }
+        });
     }
     
     // Select client from menu
@@ -2792,14 +2692,6 @@ async function initializeApp() {
         document.getElementById('theme-icon').textContent = '☀️';
     }
     
-    // Restore UI panel states from localStorage
-    if (localStorage.getItem('envVarsOpen') === 'true') {
-        toggleEnvVars();
-    }
-    if (localStorage.getItem('clientMenuOpen') === 'true') {
-        toggleClientMenu();
-    }
-    
     // Render document title
     function renderTitle() {
         const titleContainer = document.getElementById('doc-title-container');
@@ -2985,6 +2877,9 @@ async function initializeApp() {
     function markdownToStep(md) {
         const lines = md.split('\n');
         const step = { done: false, notes: '', command: '', userNotes: {} };
+        let inCodeBlock = false;
+        let codeBuffer = [];
+        let notesBuffer = [];
         let collectingNotes = false;
         let currentSubsection = '';
         let subsectionBuffer = [];
@@ -3000,6 +2895,16 @@ async function initializeApp() {
                 step.done = true;
             } else if (line.trim() === '- [ ]') {
                 step.done = false;
+            } else if (line.trim() === '```') {
+                if (inCodeBlock) {
+                    step.command = codeBuffer.join('\n').trim();
+                    inCodeBlock = false;
+                    codeBuffer = [];
+                } else {
+                    inCodeBlock = true;
+                }
+            } else if (inCodeBlock) {
+                codeBuffer.push(line);
             } else if (line.startsWith('#### ')) {
                 const sectionTitle = line.substring(5).trim();
                 if (sectionTitle.toLowerCase().includes('notes') || sectionTitle.toLowerCase().includes('note')) {
