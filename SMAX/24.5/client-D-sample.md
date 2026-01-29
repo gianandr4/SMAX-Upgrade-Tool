@@ -23,6 +23,10 @@ Ensure all pods are in 2/2 or 1/1 Running state before starting.
 kubectl get pods -n {{namespace}}
 ```
 
+```bash
+kubectl get pods -n {{namespace}}
+```
+
 #### Notes
 
 ![image.png](https://raw.githubusercontent.com/gianandr4/SMAX-Upgrade-Tool/main/SMAX/24.5/images/1769507640983-image.png)
