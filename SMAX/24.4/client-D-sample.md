@@ -58,6 +58,10 @@ Some notes about the registry secret creation.
 
 ### - [ ] Complete
 
+### asda
+
+### - [ ] Complete
+
 ## Upgrade
 
 ### Monitor Upgrade Progress
