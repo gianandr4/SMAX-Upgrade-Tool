@@ -16,10 +16,11 @@ config:
 
 ### a
 asdada
+
 - [ ] Down smax 
 - [ ] Down core 
 - [ ] Kubestop.sh 
-ασδα- [ ] Snapshots (No memory) 
+- [ ] Snapshots (No memory) 
 - [ ] Turn on 
 - [ ] Up core 
 - [ ] Up smax 
