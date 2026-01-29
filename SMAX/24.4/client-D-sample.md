@@ -30,7 +30,7 @@ Current version notes here
 
 ##### 24.4
 
-Current version notes hereasda
+Current version notes here
 
 ### - [x] Complete
 
