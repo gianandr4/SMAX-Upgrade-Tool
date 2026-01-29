@@ -22,6 +22,7 @@ Ensure all pods are in 2/2 or 1/1 Running state before starting.
 ```bash
 kubectl get pods -n {{namespace}}
 ```
+`asda`
 
 #### Notes
 
