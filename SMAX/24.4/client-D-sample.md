@@ -9,6 +9,8 @@ config:
   username: admin
   password: changeme
   image_secret_name: regcred
+  asd: da
+  das: as
 ---
 
 # Client A Upgrade to v24.4
