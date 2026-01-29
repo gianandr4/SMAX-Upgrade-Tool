@@ -145,7 +145,6 @@
         .step-content pre { background: #1b1f23; color: #e1e4e8; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: ui-monospace, monospace; font-size: 13px; position: relative; }
         .step-content code { background: #1b1f23; color: #e1e4e8; padding: 2px 6px; border-radius: 3px; font-family: ui-monospace, monospace; }
         .step-content pre code { background: none; padding: 0; }
-        .interpolated-value { color: #e74c3c; font-weight: bold; }
         
         /* Reset Button */
         .reset-btn { background: #d73a49; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
@@ -342,7 +341,26 @@
             const lang = language || 'text';
             let highlighted = codeStr;
             if (typeof Prism !== 'undefined' && Prism.languages[lang]) {
-                highlighted = Prism.highlight(codeStr, Prism.languages[lang], lang);
+                // Replace variables with placeholders before highlighting
+                let placeholderStr = codeStr;
+                Object.keys(config.config || {}).forEach(key => {
+                    const placeholder = `__INTERP_${key}__`;
+                    placeholderStr = placeholderStr.replace(new RegExp(`<${key}>`, 'gi'), placeholder);
+                    const upperKey = key.toUpperCase();
+                    placeholderStr = placeholderStr.replace(new RegExp(`<${upperKey}>`, 'g'), placeholder);
+                });
+                console.log(`[SMAX Tool] Code renderer: original codeStr:`, codeStr);
+                console.log(`[SMAX Tool] Code renderer: placeholderStr:`, placeholderStr);
+                highlighted = Prism.highlight(placeholderStr, Prism.languages[lang], lang);
+                console.log(`[SMAX Tool] Code renderer: highlighted with placeholders:`, highlighted);
+                // Replace placeholders with styled spans
+                Object.keys(config.config || {}).forEach(key => {
+                    const placeholder = `__INTERP_${key}__`;
+                    const val = config.config[key] || '';
+                    const styledVal = `<span style="color: #e74c3c; font-weight: bold;">${val}</span>`;
+                    highlighted = highlighted.replace(new RegExp(placeholder, 'g'), styledVal);
+                });
+                console.log(`[SMAX Tool] Code renderer: final highlighted:`, highlighted);
             }
             return `<pre class="language-${lang}"><code class="language-${lang}">${highlighted}</code></pre>`;
         };
@@ -1966,7 +1984,7 @@ async function initializeApp() {
         let result = str;
         Object.keys(config.config || {}).forEach(key => {
             const val = config.config[key] || '';
-            const styledVal = `<span class="interpolated-value">${val}</span>`;
+            const styledVal = `<span style="color: #e74c3c; font-weight: bold;">${val}</span>`;
             // Replace {{key}} format
             result = result.replace(new RegExp(`{{${key}}}`, 'g'), styledVal);
             // Replace <key> format (case-insensitive)
@@ -1977,6 +1995,11 @@ async function initializeApp() {
             // Handle HTML-encoded versions (&lt;key&gt;)
             result = result.replace(new RegExp(`&lt;${key}&gt;`, 'gi'), styledVal);
             result = result.replace(new RegExp(`&lt;${upperKey}&gt;`, 'g'), styledVal);
+            // Handle Prism-tokenized versions (<span class="token operator">&lt;</span>key<span class="token operator">&gt;</span>)
+            const tokenizedPattern = `<span class="token operator">&lt;</span>${key}<span class="token operator">&gt;</span>`;
+            result = result.replace(new RegExp(tokenizedPattern, 'gi'), styledVal);
+            const tokenizedUpperPattern = `<span class="token operator">&lt;</span>${upperKey}<span class="token operator">&gt;</span>`;
+            result = result.replace(new RegExp(tokenizedUpperPattern, 'g'), styledVal);
         });
         return result;
     }
@@ -2072,15 +2095,16 @@ async function initializeApp() {
                 // Remove leading H3 header if it matches the step title
                 const h3Pattern = new RegExp(`^### ${step.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n`, 'm');
                 notesContent = notesContent.replace(h3Pattern, '');
-                // Interpolate variables in the step content
-                notesContent = interpolate(notesContent);
+                // Interpolate variables in the step content - moved to after parsing
+                // notesContent = interpolate(notesContent);
                 stepMarkdown += `${notesContent}\n\n`;
             }
 
             // Add command as code block if present
             if (step.command) {
-                const interpolatedCommand = interpolate(step.command);
-                stepMarkdown += `\`\`\`bash\n${interpolatedCommand}\n\`\`\`\n\n`;
+                // Interpolate variables in the command - now handled in renderer
+                // const interpolatedCommand = interpolate(step.command);
+                stepMarkdown += `\`\`\`bash\n${step.command}\n\`\`\`\n\n`;
             }
 
             // Render the combined markdown content
@@ -2094,7 +2118,6 @@ async function initializeApp() {
                 console.log(`[SMAX Tool] Step ${stepIndex} parsed HTML length:`, parsedHTML.length);
                 // Interpolate variables in the parsed HTML
                 const interpolatedHTML = interpolate(parsedHTML);
-                console.log(`[SMAX Tool] Step ${stepIndex} interpolated HTML:`, interpolatedHTML.substring(0, 300));
                 contentDiv.innerHTML = interpolatedHTML;
                 
                 // Add copy buttons to all code blocks
