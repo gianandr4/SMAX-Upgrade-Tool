@@ -53,7 +53,7 @@ Some notes about the registry secret creation.
 
 ### asda
 
-### - [ ] Complete
+asda
 
 ## Upgrade
 
