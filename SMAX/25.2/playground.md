@@ -27,7 +27,7 @@ asdada
 - [ ] Kube-start.sh on workers 
 
 ```bash
-asda/<omt_binaries_path>
+<omt_binaries_path>/checkpods.sh
 ```
 
 ```bash
