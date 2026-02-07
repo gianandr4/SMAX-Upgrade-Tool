@@ -10,7 +10,6 @@ config:
   password: changeme
   image_secret_name: regcred
   asd: da
-  das: as
 ---
 
 # Client A Upgrade to v24.4
@@ -34,6 +33,7 @@ Current version notes
 
 Current version notes here
 asda
+
 ### - [x] Complete
 
 ### Create Docker Registry Secret

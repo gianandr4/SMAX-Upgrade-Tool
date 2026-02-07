@@ -5,7 +5,7 @@ config:
   version: '24.4'
   installation_path: /opt/cdf
   omt_binaries_path: /home/omtbinaa
-  CDF_HOME: /
+  CDF_HOME: /opt/cdf
   namespace: itsma-clienta
   username: ptadmin
 ---
@@ -14,7 +14,7 @@ config:
 
 ## OMT Prerequisite tasks
 
-### a
+### asdada
 asdada
 
 - [ ] Down smax 
@@ -27,7 +27,7 @@ asdada
 - [ ] Kube-start.sh on workers 
 
 ```bash
-asda/<omt_binaries_path>
+<omt_binaries_path>/checkpods.sh
 ```
 
 ```bash
