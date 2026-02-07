@@ -744,6 +744,106 @@ function getVersionsBasePath() {
     return product === 'SMAX' ? 'SMAX' : product;
 }
 
+// Populate versions from local SMAX folder structure
+async function populateLocalVersions() {
+    try {
+        const basePath = getVersionsBasePath();
+        console.log('[SMAX Tool] Attempting to populate versions from local folder structure...');
+        
+        // Try to fetch the folder structure locally
+        const response = await fetch(`${basePath}/`);
+        if (!response.ok) {
+            console.log('[SMAX Tool] Cannot access local folder structure, skipping version population');
+            return;
+        }
+        
+        const html = await response.text();
+        // Parse HTML directory listing to extract version folders
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const links = doc.querySelectorAll('a');
+        
+        const versions = [];
+        links.forEach(link => {
+            const href = link.getAttribute('href');
+            // Match version patterns like 24.4/, 24.5/, etc.
+            if (href && /^\d+\.\d+\/$/.test(href)) {
+                versions.push(href.replace('/', ''));
+            }
+        });
+        
+        if (versions.length > 0) {
+            const verSelect = document.getElementById('selVer');
+            verSelect.innerHTML = '';
+            
+            versions.sort().forEach(version => {
+                const opt = document.createElement('option');
+                opt.value = version;
+                opt.innerText = `Version ${version}`;
+                verSelect.appendChild(opt);
+            });
+            
+            console.log(`[SMAX Tool] Populated ${versions.length} local versions`);
+        }
+    } catch (e) {
+        console.log('[SMAX Tool] Could not populate local versions:', e.message);
+    }
+}
+
+// Load local markdown file
+async function loadLocalFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    try {
+        const text = await file.text();
+        
+        // Parse markdown
+        const { config: configData, markdown } = parseMarkdownFrontMatter(text);
+        const { title, stages } = parseMarkdownStages(markdown);
+        
+        config = {
+            title: title,
+            config: configData,
+            stages: stages
+        };
+        
+        // Set path for display purposes
+        CURRENT_YAML_PATH = file.name;
+        FILE_SHA = ""; // No SHA for local files
+        
+        currentStageIndex = 0;
+        renderTitle();
+        renderVars();
+        renderStageTabs();
+        renderCurrentStage();
+        updateProgress();
+        
+        // Update UI to show local file loaded
+        document.getElementById('syncInd').classList.remove('online');
+        document.getElementById('syncStat').innerText = `Local: ${file.name}`;
+        
+        // Save to localStorage as backup
+        try {
+            localStorage.setItem('smax_config_backup', JSON.stringify(config));
+            console.log('[SMAX Tool] Local file saved to localStorage backup');
+        } catch (e) {
+            console.error('[SMAX Tool] Failed to save to localStorage:', e);
+        }
+        
+        showSuccess(`Loaded local file: ${file.name}`);
+        
+        // Populate versions for upgrade modal if not already populated
+        // For local files, we can still scan the SMAX folder if available
+        if (!GITHUB_TOKEN) {
+            await populateLocalVersions();
+        }
+    } catch (e) {
+        console.error('[SMAX Tool] Failed to load local file:', e);
+        showError(`Failed to load local file: ${e.message}`);
+    }
+}
+
 // Version upgrade functions (moved to global scope)
 async function showVersionUpgrade() {
     const modal = document.getElementById('versionUpgradeModal');
@@ -1610,106 +1710,6 @@ async function initializeApp() {
         } catch (e) {
             console.error('[SMAX Tool] Failed to load from localStorage:', e);
             return false;
-        }
-    }
-
-    // Load local markdown file
-    async function loadLocalFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        try {
-            const text = await file.text();
-            
-            // Parse markdown
-            const { config: configData, markdown } = parseMarkdownFrontMatter(text);
-            const { title, stages } = parseMarkdownStages(markdown);
-            
-            config = {
-                title: title,
-                config: configData,
-                stages: stages
-            };
-            
-            // Set path for display purposes
-            CURRENT_YAML_PATH = file.name;
-            FILE_SHA = ""; // No SHA for local files
-            
-            currentStageIndex = 0;
-            renderTitle();
-            renderVars();
-            renderStageTabs();
-            renderCurrentStage();
-            updateProgress();
-            
-            // Update UI to show local file loaded
-            document.getElementById('syncInd').classList.remove('online');
-            document.getElementById('syncStat').innerText = `Local: ${file.name}`;
-            
-            // Save to localStorage as backup
-            try {
-                localStorage.setItem('smax_config_backup', JSON.stringify(config));
-                console.log('[SMAX Tool] Local file saved to localStorage backup');
-            } catch (e) {
-                console.error('[SMAX Tool] Failed to save to localStorage:', e);
-            }
-            
-            showSuccess(`Loaded local file: ${file.name}`);
-            
-            // Populate versions for upgrade modal if not already populated
-            // For local files, we can still scan the SMAX folder if available
-            if (!GITHUB_TOKEN) {
-                await populateLocalVersions();
-            }
-        } catch (e) {
-            console.error('[SMAX Tool] Failed to load local file:', e);
-            showError(`Failed to load local file: ${e.message}`);
-        }
-    }
-    
-    // Populate versions from local SMAX folder structure
-    async function populateLocalVersions() {
-        try {
-            const basePath = getVersionsBasePath();
-            console.log('[SMAX Tool] Attempting to populate versions from local folder structure...');
-            
-            // Try to fetch the folder structure locally
-            const response = await fetch(`${basePath}/`);
-            if (!response.ok) {
-                console.log('[SMAX Tool] Cannot access local folder structure, skipping version population');
-                return;
-            }
-            
-            const html = await response.text();
-            // Parse HTML directory listing to extract version folders
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const links = doc.querySelectorAll('a');
-            
-            const versions = [];
-            links.forEach(link => {
-                const href = link.getAttribute('href');
-                // Match version patterns like 24.4/, 24.5/, etc.
-                if (href && /^\d+\.\d+\/$/.test(href)) {
-                    versions.push(href.replace('/', ''));
-                }
-            });
-            
-            if (versions.length > 0) {
-                const verSelect = document.getElementById('selVer');
-                verSelect.innerHTML = '';
-                
-                versions.sort().forEach(version => {
-                    const opt = document.createElement('option');
-                    opt.value = version;
-                    opt.innerText = `Version ${version}`;
-                    verSelect.appendChild(opt);
-                });
-                
-                console.log(`[SMAX Tool] Populated ${versions.length} local versions`);
-            }
-        } catch (e) {
-            console.log('[SMAX Tool] Could not populate local versions:', e.message);
         }
     }
 
