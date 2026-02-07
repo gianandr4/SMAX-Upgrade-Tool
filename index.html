@@ -369,7 +369,7 @@
                 Object.keys(config.config || {}).forEach(key => {
                     const placeholder = `__INTERP_${key}__`;
                     const val = config.config[key] || '';
-                    const styledVal = `<span style="color: #e74c3c; font-weight: bold;">${val}</span>`;
+                    const styledVal = `<span style="color: #ffa500; font-weight: bold; background-color: rgba(255, 165, 0, 0.1); padding: 2px 4px; border-radius: 3px;">${val}</span>`;
                     highlighted = highlighted.replace(new RegExp(placeholder, 'g'), styledVal);
                 });
                 console.log(`[SMAX Tool] Code renderer: final highlighted:`, highlighted);
@@ -572,6 +572,33 @@
 </div>
 
 <!-- Version Upgrade Modal -->
+<div id="versionUpgradeModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0;">Upgrade to New Version</h3>
+        <p>Select or create a target version to upgrade to:</p>
+        <select id="targetVersionSelect" onchange="onTargetVersionChange()" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text);">
+            <option value="">Select version...</option>
+        </select>
+        <div id="newVersionDiv" style="display: none; margin: 10px 0;">
+            <label for="newVersionInput" style="display: block; margin-bottom: 5px; color: var(--text);">New Version Number:</label>
+            <input type="text" id="newVersionInput" placeholder="e.g., 24.6" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); box-sizing: border-box;">
+        </div>
+        <p style="font-size: 12px; color: #586069; margin-top: 15px;">
+            This will:
+            <br>• Archive current notes under the current version
+            <br>• Reset all step completion statuses
+            <br>• Save to the new version folder
+        </p>
+        <div class="modal-buttons">
+            <button onclick="closeVersionUpgrade()" style="padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--card-bg); color: var(--text);">
+                Cancel
+            </button>
+            <button onclick="confirmVersionUpgrade()" style="background: #0366d6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                Upgrade
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
 // Wait for DOM to be ready
@@ -1998,7 +2025,7 @@ async function initializeApp() {
         let result = str;
         Object.keys(config.config || {}).forEach(key => {
             const val = config.config[key] || '';
-            const styledVal = `<span style="color: #e74c3c; font-weight: bold;">${val}</span>`;
+            const styledVal = `<span style="color: #ffa500; font-weight: bold; background-color: rgba(255, 165, 0, 0.1); padding: 2px 4px; border-radius: 3px;">${val}</span>`;
             // Replace {{key}} format
             result = result.replace(new RegExp(`{{${key}}}`, 'g'), styledVal);
             // Replace <key> format (case-insensitive)
@@ -3378,6 +3405,9 @@ async function initializeApp() {
         modal.style.opacity = '1';
         console.log('[UNIFIED EDITOR] Modal display set to block');
         
+        // Setup image paste functionality for unified editor
+        setupImagePaste(textarea);
+        
         // Add button event listeners
         document.getElementById('cancelEditorBtn').onclick = closeUnifiedEditor;
         document.getElementById('saveEditorBtn').onclick = saveUnifiedEditor;
@@ -3631,216 +3661,6 @@ async function initializeApp() {
     function editEnvVars() {
         const content = jsyaml.dump(config.config || {});
         showUnifiedEditor('envVars', content);
-    }
-    
-    function showVersionUpgrade() {
-        const modal = document.getElementById('versionUpgradeModal');
-        const select = document.getElementById('targetVersionSelect');
-        
-        // Populate version options
-        const currentVer = document.getElementById('selVer').value;
-        const verSelect = document.getElementById('selVer');
-        select.innerHTML = '<option value="">Select version...</option>';
-        
-        Array.from(verSelect.options).forEach(opt => {
-            if (opt.value !== currentVer) {
-                const newOpt = document.createElement('option');
-                newOpt.value = opt.value;
-                newOpt.textContent = opt.textContent;
-                select.appendChild(newOpt);
-            }
-        });
-        
-        // Add option to create new version
-        const newVerOpt = document.createElement('option');
-        newVerOpt.value = '__new__';
-        newVerOpt.textContent = '➕ Create New Version...';
-        select.appendChild(newVerOpt);
-        
-        modal.style.display = 'block';
-    }
-    
-    function closeVersionUpgrade() {
-        console.log('[SMAX Tool] closeVersionUpgrade called');
-        document.getElementById('versionUpgradeModal').style.display = 'none';
-        // Reset new version input
-        document.getElementById('newVersionDiv').style.display = 'none';
-        document.getElementById('newVersionInput').value = '';
-    }
-    
-    function onTargetVersionChange() {
-        console.log('[SMAX Tool] onTargetVersionChange called');
-        const select = document.getElementById('targetVersionSelect');
-        const newVersionDiv = document.getElementById('newVersionDiv');
-        
-        if (select.value === '__new__') {
-            newVersionDiv.style.display = 'block';
-        } else {
-            newVersionDiv.style.display = 'none';
-            document.getElementById('newVersionInput').value = '';
-        }
-    }
-    
-    async function confirmVersionUpgrade() {
-        console.log('[SMAX Tool] confirmVersionUpgrade called');
-        const select = document.getElementById('targetVersionSelect');
-        let targetVersion = select.value;
-        
-        if (!targetVersion) {
-            showError('Please select a target version');
-            return;
-        }
-        
-        // Handle new version creation
-        if (targetVersion === '__new__') {
-            const newVersionInput = document.getElementById('newVersionInput');
-            targetVersion = newVersionInput.value.trim();
-            
-            if (!targetVersion) {
-                showError('Please enter a version number');
-                return;
-            }
-            
-            // Validate version format (should contain numbers and dots)
-            if (!/^\d+(\.\d+)*$/.test(targetVersion)) {
-                showError('Version should contain only numbers and dots (e.g., 24.6)');
-                return;
-            }
-        }
-        
-        const currentClient = document.getElementById('selClient').value;
-        const currentVersion = document.getElementById('selVer').value;
-        
-        try {
-            // Archive current notes under #### history in each step
-            config.stages.forEach(stage => {
-                stage.steps.forEach(step => {
-                    if (step.userNotes && step.userNotes['Current']) {
-                        // Move current notes to the previous version's archive
-                        step.userNotes[currentVersion] = step.userNotes['Current'];
-                        
-                        // Clear current notes for fresh start in new version
-                        step.userNotes['Current'] = '';
-                    }
-                    // Reset done status
-                    step.done = false;
-                });
-            });
-            
-            // Update title
-            config.title = config.title.replace(currentVersion, targetVersion);
-            
-            // Update version in config
-            if (config.config.version) {
-                config.config.version = targetVersion;
-            }
-            
-            // Save to new version folder
-            const basePath = getVersionsBasePath();
-            const newPath = `${basePath}/${targetVersion}/${currentClient}.md`;
-            const oldPath = CURRENT_YAML_PATH;
-            CURRENT_YAML_PATH = newPath;
-            FILE_SHA = ""; // New file
-            
-            // Save to localStorage as backup
-            try {
-                localStorage.setItem('smax_config_backup', JSON.stringify(config));
-                console.log('[SMAX Tool] Config saved to localStorage backup');
-                
-                // Show temporary success message
-                const status = document.getElementById('autosave-status');
-                if (status) {
-                    status.textContent = `Upgraded to ${targetVersion} (saved locally)`;
-                    status.style.color = 'var(--primary)';
-                    setTimeout(() => {
-                        status.textContent = 'Autosave enabled';
-                        status.style.color = '';
-                    }, 3000);
-                }
-            } catch (e) {
-                console.error('[SMAX Tool] Failed to save to localStorage:', e);
-            }
-            
-            // Try to save to GitHub
-            if (GITHUB_TOKEN) {
-                await saveData();
-            } else {
-                console.log('[SMAX Tool] GitHub not connected, upgrade saved locally only');
-                // Update status to show local save
-                const status = document.getElementById('autosave-status');
-                if (status) {
-                    status.textContent = `Upgraded to ${targetVersion} (GitHub not connected)`;
-                    status.style.color = '#d73a49'; // Red color for warning
-                    setTimeout(() => {
-                        status.textContent = 'Autosave enabled';
-                        status.style.color = '';
-                    }, 3000);
-                }
-            }
-            
-            // Update UI to show new version
-            document.getElementById('selVer').value = targetVersion;
-            
-            console.log(`[SMAX Tool] Upgraded from ${currentVersion} to ${targetVersion}`);
-            showSuccess(`Successfully upgraded to version ${targetVersion}`);
-            
-            closeVersionUpgrade();
-            
-            // Refresh the version list to include the new version
-            if (GITHUB_TOKEN) {
-                await fetchFolders();
-            } else {
-                // Manually add the new version to the dropdown if not already present
-                const verSelect = document.getElementById('selVer');
-                let versionExists = false;
-                for (let i = 0; i < verSelect.options.length; i++) {
-                    if (verSelect.options[i].value === targetVersion) {
-                        versionExists = true;
-                        break;
-                    }
-                }
-                if (!versionExists) {
-                    const newOpt = document.createElement('option');
-                    newOpt.value = targetVersion;
-                    newOpt.textContent = targetVersion;
-                    verSelect.appendChild(newOpt);
-                }
-            }
-            
-            // Ensure the new version is selected
-            document.getElementById('selVer').value = targetVersion;
-            
-            // Fetch clients for the new version
-            if (GITHUB_TOKEN) {
-                await fetchClients(targetVersion);
-            } else {
-                // Manually add the client to the dropdown if not already present
-                const clientSelect = document.getElementById('selClient');
-                let clientExists = false;
-                for (let i = 0; i < clientSelect.options.length; i++) {
-                    if (clientSelect.options[i].value === currentClient) {
-                        clientExists = true;
-                        break;
-                    }
-                }
-                if (!clientExists) {
-                    const newOpt = document.createElement('option');
-                    newOpt.value = currentClient;
-                    newOpt.textContent = currentClient;
-                    clientSelect.appendChild(newOpt);
-                }
-            }
-            
-            // Ensure the client is selected
-            document.getElementById('selClient').value = currentClient;
-            
-            // Load the data for the new version
-            await loadData();
-            
-        } catch (e) {
-            console.error('[SMAX Tool] Version upgrade error:', e);
-            showError(`Version upgrade failed: ${e.message}`);
-        }
     }
     
     // Make functions global so onclick handlers work
