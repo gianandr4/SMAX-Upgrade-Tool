@@ -25,6 +25,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/shell/shell.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/markdown-fold.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css" rel="stylesheet">
     <style>
         :root { 
             --primary: #2ea44f; 
@@ -260,6 +264,14 @@
         .CodeMirror.cm-s-monokai .CodeMirror-linenumber {
             color: #90908a !important;
         }
+        .CodeMirror.cm-s-monokai .CodeMirror-foldgutter {
+            background: #272822 !important;
+            border-right: 1px solid #49483e !important;
+        }
+        .CodeMirror.cm-s-monokai .CodeMirror-foldgutter-open,
+        .CodeMirror.cm-s-monokai .CodeMirror-foldgutter-folded {
+            color: #f8f8f2 !important;
+        }
         
         /* Image upload */
         .image-upload-area { border: 2px dashed var(--border); border-radius: 6px; padding: 20px; text-align: center; margin: 10px 0; cursor: pointer; }
@@ -413,23 +425,23 @@
     </label>
 
     <button onclick="saveData()" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
-        💾 Save Progress
-    </button>
-    
-    <button onclick="exportToPDF()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
-        📄 Export Full PDF
+        💾 Save
     </button>
     
     <button onclick="loadData()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
-        🔄 Refresh Data
+        🔄 Refresh
+    </button>
+
+    <button onclick="exportToPDF()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+        🖨️ PDF
     </button>
     
     <button onclick="showRawEditor()" style="background: #6f42c1; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
-        📝 Raw Editor
+        📝 Editor
     </button>
     
     <button onclick="showVersionUpgrade()" style="background: #0366d6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
-        🚀 Upgrade to Version
+        🚀 Upgrade
     </button>
     
     <button onclick="toggleEnvVars()" id="envToggleBtn" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
@@ -449,7 +461,7 @@
     </div>
     
     <button onclick="showResetModal()" class="reset-btn">
-        🔄 Reset All Done Steps
+        🔄 Reset Steps
     </button>
 </div>
 
@@ -536,6 +548,8 @@
             </div>
             <div class="editor-toolbar">
                 <button id="editorPreviewBtn" onclick="toggleEditorPreview()" style="display: none; background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 8px;">👁️ Preview</button>
+                <button id="expandBtn" style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 8px;">⏬ Expand</button>
+                <button id="collapseBtn" style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 8px;">⏫ Collapse</button>
                 <button onclick="toggleWordWrap()" id="wordWrapBtn" style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 8px;">↩️ Wrap</button>
                 <button onclick="toggleSyntaxHighlighting()" id="syntaxHighlightBtn" style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 8px;">🎨 Highlight</button>
                 <select id="editorFontSize" onchange="changeFontSize()" style="padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); color: var(--text); font-size: 12px;">
@@ -2146,6 +2160,14 @@ async function initializeApp() {
                         const code = pre.querySelector('code');
                         if (code) {
                             copyToClipboard(code.textContent);
+                            // Add visual feedback
+                            const originalText = copyBtn.textContent;
+                            copyBtn.textContent = 'Copied!';
+                            copyBtn.style.background = '#28a745'; // Green for success
+                            setTimeout(() => {
+                                copyBtn.textContent = originalText;
+                                copyBtn.style.background = '#0366d6'; // Back to original
+                            }, 2000);
                         }
                     };
                     wrapper.appendChild(copyBtn);
@@ -2489,7 +2511,7 @@ async function initializeApp() {
         const isOpen = card.classList.contains('open');
         if (isOpen) {
             card.style.display = 'block';
-            btn.textContent = '⚙️ Hide Variables';
+            btn.textContent = '⚙️ Variables';
         } else {
             setTimeout(() => card.style.display = 'none', 300); // Hide after animation
             btn.textContent = '⚙️ Variables';
@@ -2538,7 +2560,7 @@ async function initializeApp() {
         const isOpen = card.style.display === 'none' || card.style.display === '';
         if (isOpen) {
             card.style.display = 'block';
-            btn.textContent = '📁 Hide Menu';
+            btn.textContent = '📁 Menu';
         } else {
             card.style.display = 'none';
             btn.textContent = '📁 Menu';
@@ -3128,10 +3150,10 @@ async function initializeApp() {
             config.stages[currentStageIndex].steps.push({
                 id: stepTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
                 title: stepTitle.trim(),
-                notes: '',
+                notes: '#### Notes\n\n',
                 command: '',
                 done: false,
-                userNotes: ''
+                userNotes: {}
             });
             renderCurrentStage();
             updateProgress();
@@ -3214,7 +3236,7 @@ async function initializeApp() {
             title: 'Edit Step',
             mode: 'markdown',
             height: '500px',
-            showPreview: false,
+            showPreview: true,
             validate: (content) => {
                 try {
                     const step = markdownToStep(content);
@@ -3319,6 +3341,8 @@ async function initializeApp() {
                     theme: 'monokai', // Use monokai theme for better contrast
                     lineWrapping: true,
                     viewportMargin: Infinity,
+                    foldGutter: true,
+                    gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
                     extraKeys: {
                         "Ctrl-B": function(cm) { insertUnifiedMarkdown("**", "**"); },
                         "Ctrl-I": function(cm) { insertUnifiedMarkdown("*", "*"); },
@@ -3357,6 +3381,8 @@ async function initializeApp() {
         // Add button event listeners
         document.getElementById('cancelEditorBtn').onclick = closeUnifiedEditor;
         document.getElementById('saveEditorBtn').onclick = saveUnifiedEditor;
+        document.getElementById('expandBtn').onclick = expandAllHeaders;
+        document.getElementById('collapseBtn').onclick = collapseAllHeaders;
         document.getElementById('editorFontSize').addEventListener('change', changeFontSize);
         
         textarea.focus();
@@ -3388,7 +3414,40 @@ async function initializeApp() {
         // Clean up button event listeners
         document.getElementById('cancelEditorBtn').onclick = null;
         document.getElementById('saveEditorBtn').onclick = null;
+        document.getElementById('expandBtn').onclick = null;
+        document.getElementById('collapseBtn').onclick = null;
         document.getElementById('editorFontSize').removeEventListener('change', changeFontSize);
+    }
+    
+    // Expand all headers (unfold all)
+    function expandAllHeaders() {
+        if (codeMirrorEditor) {
+            codeMirrorEditor.execCommand('unfoldAll');
+        }
+    }
+    
+    // Collapse all ## headers
+    function collapseAllHeaders() {
+        if (codeMirrorEditor) {
+            const doc = codeMirrorEditor.getDoc();
+            const lines = doc.lineCount();
+            for (let i = 0; i < lines; i++) {
+                const line = doc.getLine(i);
+                if (line.trim().startsWith('## ')) {
+                    // Find the end of this section (next header or end)
+                    let end = i + 1;
+                    while (end < lines) {
+                        const nextLine = doc.getLine(end);
+                        if (nextLine.trim().match(/^#{1,6} /)) {
+                            break;
+                        }
+                        end++;
+                    }
+                    // Fold from i to end-1
+                    codeMirrorEditor.foldCode({line: i, ch: 0}, null, 'fold');
+                }
+            }
+        }
     }
     
     // Save unified editor
@@ -4348,3 +4407,4 @@ async function initializeApp() {
 </script>
 </body>
 </html>
+
